@@ -1,12 +1,31 @@
 # Command reference / 命令手册
 
-All commands support `--help`. Successful commands print JSON to stdout; failures print an error to stderr. The interactive Lens assistant also displays progress and prompts. Paths can contain spaces when quoted. / 所有命令支持 `--help`；成功输出 JSON，失败向 stderr 输出错误。交互式 Lens 另有提示。含空格的路径请加引号。
+All commands support `--help`. Most successful commands print JSON to stdout; `ui` prints a local URL and serves until stopped; failures print an error to stderr. The interactive Lens assistant also displays progress and prompts. Paths can contain spaces when quoted. / 所有命令支持 `--help`；成功输出 JSON，失败向 stderr 输出错误。交互式 Lens 另有提示。含空格的路径请加引号。
 
 | Exit code / 退出码 | Meaning / 含义 |
 | --- | --- |
 | `0` | Completed successfully / 成功。 |
 | `1` | `check` found integrity errors / `check` 发现文件完整性错误。 |
 | `2` | Invalid arguments or a handled operation error / 参数或操作错误。 |
+
+## `ui` / 本地网页工作台
+
+```bash
+photo-locate ui --cases cases --port 8765
+photo-locate ui --cases cases --port 8765 --no-open
+```
+
+Starts the English/Chinese workbench on `127.0.0.1` only. Imports local photos, supports pointer or coordinate cropping, candidates, evidence comparison, reviews and report downloads. `--no-open` prevents automatic browser launch. Ctrl-C stops the server. / 启动本机中英文工作台，可导入、框选、记录候选与证据、复审并导出；Ctrl-C 停止。
+
+Images stay local until you explicitly upload them to a separate search provider. PDF needs the `pdf` extra and an embeddable CJK font. / 图片保持本地，搜图另行手动上传。PDF 需要扩展及字体。
+
+## `demo` / 离线演示
+
+```bash
+photo-locate demo --case cases/demo
+```
+
+Creates a synthetic building, one crop, a candidate and an unverified reference comparison in an empty directory. No network required; conclusion stays `candidate`. Also available as **Try offline demo** in the UI. / 在空目录绘制虚构建筑、裁切并生成演示记录；全程离线，保留候选等级。界面内也可一键创建。
 
 ## `init`
 

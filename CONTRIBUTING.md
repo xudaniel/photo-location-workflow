@@ -4,15 +4,21 @@ Thanks for helping make photo-location research easier to verify. / 感谢你帮
 
 ## Local setup / 本地开发
 
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then use the committed lockfile. / 安装 uv 后使用仓库锁文件。
+
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e '.[dev,pdf,release]'
-python -m pytest -q
+uv sync --locked --extra dev --extra pdf --extra release
+uv run --locked --extra dev --extra pdf pytest -q
+uv run --locked photo-locate ui --cases cases/development
 ```
 
-PDF tests need an embeddable CJK font. Ubuntu/Debian: install `fonts-wqy-microhei`. / PDF 测试需要可嵌入中文字体。
+PDF tests need an embeddable CJK font. Ubuntu/Debian: `sudo apt-get install fonts-wqy-microhei`. Linux CI requires PDF coverage; macOS/Windows skip only that test if the font is absent. / PDF 需要可嵌入中文字体；Linux CI 强制覆盖，其余系统缺字体时明确跳过。
+
+CI runs Ubuntu Python 3.10/3.12/3.13 and macOS/Windows Python 3.12. HTTP tests cover local session authorization, imports, crops, candidates, evidence, review history and exports. / CI 覆盖三系统，本地 API 测试覆盖完整记录流程。
+
+For UI changes, test the real browser flow: choose/drop synthetic image → draw/save crop → candidate → evidence with reference image → review → conclude → download HTML/PDF → reopen case. Check Chinese/English and a narrow viewport. HTTP tests cannot verify pointer coordinates or visual layout. / 界面改动需实际完成浏览器流程、切换语言并检查窄屏；HTTP 测试不能代替框选与视觉检查。
+
+Update dependencies deliberately with `uv lock --upgrade`, inspect the diff, then rerun CI. Normal development uses `--locked`. / 更新依赖后检查锁文件变化并重跑 CI，日常使用锁定模式。
 
 ## Changes / 修改约定
 
@@ -29,3 +35,12 @@ Describe the concrete problem, the resulting behavior, and the checks performed.
 ## License / 许可
 
 Contributions are accepted under the repository's MIT License. Third-party assets retain their original licenses and must include attribution and redistribution permission. / 贡献使用 MIT 许可；第三方素材需保留许可并具有再分发权限。
+
+## Release / 发行
+
+1. Update `pyproject.toml`, `__version__`, both READMEs and `CHANGELOG.md`. Refresh `uv.lock` with `uv lock`. / 同步包版本、双语说明、更新记录和锁文件。
+2. Add bilingual `docs/release-vX.Y.Z.md`, validate tests, build with `uv run --locked --extra release python -m build`, and inspect the package contents. / 写双语发行说明并验证测试和打包内容。
+3. Push main, then an annotated matching tag: `git tag -a vX.Y.Z -m 'vX.Y.Z'` and `git push origin vX.Y.Z`. / 推送主分支与对应带注释标签。
+4. `release.yml` calls the full test matrix, verifies all version values, then creates wheel, source archive, SHA-256 manifest and GitHub Release. It publishes only after validation succeeds. / 自动发行先验证，成功后构建并发布。
+
+GitHub Releases distribute this project; the workflow does not publish to PyPI. Existing release tags should not be moved. / 使用 GitHub Release 分发，不自动发布 PyPI；不要移动已发布标签。

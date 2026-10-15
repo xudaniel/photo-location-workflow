@@ -12,7 +12,7 @@
 
 **Photo Location Workflow** 把照片定位研究整理成一条可复核的流程：整图反向搜索、独特局部裁切、官网地址核对、街景对照，以及证据报告。
 
-命令行工具负责图片准备、记录、文件完整性检查与报告。**视觉判断由你或连接工具的 AI 助手完成**；程序本身没有地理识别模型，不会把相似搜索结果直接当成答案，也不需要付费模型 API 密钥。
+本地中英文网页工作台和命令行共用图片准备、记录、文件完整性检查与报告。**视觉判断由你或连接工具的 AI 助手完成**；程序本身没有地理识别模型，不会把相似搜索结果直接当成答案，也不需要付费模型 API 密钥。
 
 ```mermaid
 flowchart LR
@@ -28,6 +28,7 @@ flowchart LR
 
 | 功能 | 作用 |
 | --- | --- |
+| 本地网页工作台 | 拖放照片、鼠标框选、中英文切换、候选地点、双图证据对照与一键导出。 |
 | 图片准备 | 校正 EXIF 方向、移除元数据、保留输入文件、记录校验和。 |
 | 独特局部裁切 | 保存原始分辨率裁切及最近邻放大图，使用独立目录防止覆盖原图。 |
 | Google Lens 辅助 | 默认只显示手动操作说明；显式加 `--upload` 后使用可见、临时 Chromium 会话。 |
@@ -37,6 +38,12 @@ flowchart LR
 | 结论等级约束 | 记录官网地址和视觉证据后，才允许采用较高把握等级。 |
 | 双图对比报告 | 导出可离线查看的 HTML 和支持中文的 PDF，附来源、并排图片及复审记录。 |
 
+## 本地工作台
+
+![本地网页工作台，使用虚构建筑演示](docs/assets/workbench-preview.jpg)
+
+安装后运行 `photo-locate ui`，浏览器会打开本机工作台。点击“体验离线演示”即可试用，无需上传照片或申请密钥。
+
 ## 报告预览
 
 下图来自离线虚构建筑演示，仅展示双图版式，不代表真实地点识别。
@@ -45,12 +52,12 @@ flowchart LR
 
 ## 快速开始
 
-### 安装 v1.0.0
+### 安装 v1.1.0
 
-需要 **Python 3.10+**。代码适用于 macOS、Linux 和 Windows；CI 在 Ubuntu 的 Python 3.10、3.12、3.13 上运行。
+需要 **Python 3.10+**。CI 覆盖 Ubuntu 的 Python 3.10、3.12、3.13，以及 macOS 15、Windows 2025 的 Python 3.12。
 
 ```bash
-git clone --branch v1.0.0 https://github.com/xudaniel/photo-location-workflow.git
+git clone --branch v1.1.0 https://github.com/xudaniel/photo-location-workflow.git
 cd photo-location-workflow
 python3 -m venv .venv
 source .venv/bin/activate
@@ -60,17 +67,32 @@ python -m pip install -e '.[pdf]'
 
 Windows PowerShell 使用 `python -m venv .venv` 和 `.venv\Scripts\Activate.ps1`。只需要 HTML 时，执行 `python -m pip install -e .` 即可。
 
-也可以从 [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) 下载 wheel，执行 `python -m pip install /path/to/photo_location_workflow-1.0.0-py3-none-any.whl`。上述方式直接从 GitHub 安装，不依赖 PyPI 发布。
+也可以从 [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) 下载 wheel，执行 `python -m pip install /path/to/photo_location_workflow-1.1.0-py3-none-any.whl`。上述方式直接从 GitHub 安装，不依赖 PyPI 发布。
+
+### 打开本地界面
+
+```bash
+photo-locate ui
+```
+
+1. 拖放或选择照片，在照片上框选独特细节，再保存局部。
+2. 保存搜图图片，另行打开 Google Lens 手动上传，记录候选地点与官网地址。
+3. 添加来源、拍摄月份、提供者和参考图片，逐条记录匹配或反例；界面会并排显示原图和参考影像。
+4. 保留复审理由，保存结论，下载 HTML 或 PDF 报告。
+
+工作台仅监听 `127.0.0.1`，共用 CLI 的校验规则与 `case.json`；无需 Node、前端构建或模型密钥。`--cases` 可指定调查目录，`--port` 更换端口，`--no-open` 关闭自动打开浏览器。运行期间不要从其他进程修改同一调查。关闭终端或按 Ctrl-C 停止服务，之后可重新打开继续。
 
 ### 不上传照片，先跑一个离线演示
 
+在工作台点击“体验离线演示”，或执行：
+
 ```bash
-python examples/synthetic_demo.py --case cases/demo-v1
+photo-locate demo --case cases/demo-v1
 photo-locate check cases/demo-v1
 photo-locate report cases/demo-v1
 ```
 
-用浏览器打开 `cases/demo-v1/report.html`。演示采用程序绘制的**虚构建筑**，全程离线，结论保留为候选。再次运行时选择新的空目录。仓库不附私人原照片或第三方地图影像。
+用浏览器打开 `cases/demo-v1/report.html`。演示采用程序绘制的**虚构建筑**，全程离线，结论保留为候选。再次运行时选择新的空目录。wheel 安装也包含演示和完整网页。仓库不附私人原照片或第三方地图影像。
 
 ## 一次完整调查
 
@@ -205,13 +227,19 @@ cases/trip/
 ## 开发与测试
 
 ```bash
-python -m pip install -e '.[dev,pdf,release]'
-python -m pytest -q
-python -m build
-python -m twine check dist/*
+uv sync --locked --extra dev --extra pdf --extra release
+uv run --locked --extra dev --extra pdf pytest -q
+uv run --locked --extra release python -m build
+uv run --locked --extra release python -m twine check dist/*.whl dist/*.tar.gz
 ```
 
 CI 执行多版本测试、构建 wheel／源码包、检查包元数据，并验证已安装 wheel 的命令。测试使用合成图片，不访问 Google。参见 [贡献指南](CONTRIBUTING.md)、[完整命令手册](docs/commands.md)、[AI 助手执行规则](docs/agent-workflow.md)和[公开案例](docs/case-studies.md)。
+
+## 可复现开发与发行
+
+`uv.lock` 锁定依赖，`--locked` 会拒绝过期锁文件。CI 在三个系统上运行合成数据测试，并独立安装 wheel 检查演示和网页资源。Linux CI 强制验证中文 PDF；其他系统缺少字体时会明确跳过该项。
+
+推送与包版本一致的 `vX.Y.Z` 标签后，自动发行工作流先运行完整 CI，再构建 wheel、源码包和 SHA-256 清单并发布 GitHub Release。参见 [贡献指南](CONTRIBUTING.md)；仓库附中英文问题表单与 PR 模板。
 
 ## 许可与致谢
 

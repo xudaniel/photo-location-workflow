@@ -1,0 +1,55 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  validate:
+    uses: ./.github/workflows/tests.yml
+  publish:
+    needs: validate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: '0.13.1'
+          python-version: '3.12'
+      - run: uv sync --locked --extra release
+      - name: Verify tag and package versions
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          uv run --locked --extra release python - <<'PY'
+          import os, tomllib
+          from pathlib import Path
+          from photo_location_workflow import __version__
+          version = tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
+          assert os.environ['RELEASE_TAG'] == 'v' + version == 'v' + __version__, 'Tag and package versions differ'
+          PY
+      - run: uv run --locked --extra release python -m build
+      - run: uv run --locked --extra release python -m twine check dist/*.whl dist/*.tar.gz
+      - name: Create SHA-256 manifest
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          root = Path('dist')
+          paths = sorted([*root.glob('*.whl'), *root.glob('*.tar.gz')])
+          (root / 'SHA256SUMS.txt').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in paths))
+          PY
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          notes="docs/release-${RELEASE_TAG}.md"
+          if [ -f "$notes" ]; then
+            gh release create "$RELEASE_TAG" dist/*.whl dist/*.tar.gz dist/SHA256SUMS.txt --verify-tag --title "$RELEASE_TAG" --notes-file "$notes"
+          else
+            gh release create "$RELEASE_TAG" dist/*.whl dist/*.tar.gz dist/SHA256SUMS.txt --verify-tag --title "$RELEASE_TAG" --generate-notes
+          fi

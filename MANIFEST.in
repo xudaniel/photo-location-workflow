@@ -1,4 +1,6 @@
 include README.md README.zh-CN.md CHANGELOG.md CONTRIBUTING.md LICENSE
+include uv.lock
+recursive-include src/photo_location_workflow/static *.html *.css *.js
 recursive-include docs *.md *.svg *.jpg
 recursive-include examples *.py
 recursive-include tests *.py

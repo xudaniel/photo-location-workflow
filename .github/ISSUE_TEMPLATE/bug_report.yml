@@ -1,0 +1,29 @@
+name: Bug report / 问题反馈
+description: Report a reproducible problem using synthetic data / 使用合成数据描述可复现问题
+title: '[Bug] '
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version and environment / 版本与环境
+      description: photo-locate --version, OS, Python, browser / 软件版本、系统、Python、浏览器
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / 复现步骤
+      description: Include minimal commands or workbench actions. Use synthetic images. / 提供最少命令或界面操作，使用合成图片。
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior / 预期与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant errors / 错误信息
+      description: Remove private paths, images, tokens and personal information. / 先移除私人路径、图片、令牌与个人信息。

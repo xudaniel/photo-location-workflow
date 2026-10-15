@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation / 使用文档
+    url: https://github.com/xudaniel/photo-location-workflow#quick-start
+    about: Installation, local workbench and CLI / 安装、本地界面与命令行

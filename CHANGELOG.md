@@ -1,5 +1,19 @@
 # Changelog / 更新记录
 
+## 1.1.0 — 2026-10-15
+
+### Added / 新增
+
+- `photo-locate ui`: local English/Chinese web workbench with drag/drop import, pointer or coordinate crops, candidate records, paired evidence images, verdict reviews and HTML/PDF downloads. / 新增本地中英文网页工作台，覆盖导入、框选、候选、证据对照、复审与导出。
+- `photo-locate demo` and a one-click offline demo, included in installed wheels. / 安装包内附命令行及一键离线演示。
+- Locked dependencies in `uv.lock`; CI on Linux, macOS and Windows, plus isolated wheel installation checks. / 锁定依赖、三系统 CI 与独立 wheel 安装验证。
+- Tag-triggered GitHub releases gated by the full CI matrix, with wheel, source archive and SHA-256 manifest. / 完整 CI 通过后自动发行安装包与校验清单。
+- Bilingual issue forms, PR template, updated READMEs and contributor/release guidance. / 中英文问题表单、PR 模板及完整说明。
+
+### Compatibility / 兼容性
+
+Schema stays at 1 and existing CLI commands remain available. The web workbench binds only to loopback, keeps files local, and opens Google separately for manual upload. It does not automatically identify locations or verify external sources. / 保持 schema-v1 和现有命令；本地界面不自动上传或识别地点。
+
 ## 1.0.0 — 2026-10-15
 
 ### Added / 新增

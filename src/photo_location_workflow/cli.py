@@ -26,6 +26,12 @@ def parser():
     init = sub.add_parser("init", help="Create a local case and an EXIF/GPS-free image copy.")
     init.add_argument("photo", type=Path)
     init.add_argument("--case", required=True, type=Path)
+    ui = sub.add_parser("ui", help="Open the local bilingual photo investigation workbench.")
+    ui.add_argument("--cases", type=Path, default=Path("cases"))
+    ui.add_argument("--port", type=int, default=8765)
+    ui.add_argument("--no-open", action="store_true")
+    demo = sub.add_parser("demo", help="Create an offline demonstration with a synthetic image.")
+    demo.add_argument("--case", type=Path, default=Path("cases/demo"))
     cut = sub.add_parser("crop", help="Crop distinctive details without inventing pixels.")
     cut.add_argument("case", type=Path)
     cut.add_argument("--box", type=box, required=True)
@@ -77,6 +83,13 @@ def main(argv=None):
     try:
         if args.command == "init":
             result = init_case(args.photo, args.case)
+        elif args.command == "ui":
+            from .ui import serve
+            serve(args.cases, args.port, not args.no_open)
+            return 0
+        elif args.command == "demo":
+            from .demo import create_demo
+            result = create_demo(args.case)
         elif args.command == "crop":
             result = crop(args.case, args.box, args.label, args.scale)
         elif args.command == "lens":

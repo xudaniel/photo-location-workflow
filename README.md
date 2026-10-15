@@ -14,7 +14,7 @@
 
 **Photo Location Workflow** turns photo-location research into a repeatable, reviewable process: reverse-image search, distinctive-detail crops, authoritative address checks, Street View comparisons, and an evidence report.
 
-The CLI handles preparation, records, integrity checks, and reports. **You or your AI assistant make the visual judgments.** It does not run a geolocation model, automatically identify landmarks, or treat a search suggestion as a verified answer. No model API key is required.
+The local bilingual web workbench and CLI share preparation, records, integrity checks, and reports. **You or your AI assistant make the visual judgments.** It does not run a geolocation model, automatically identify landmarks, or treat a search suggestion as a verified answer. No model API key is required.
 
 ```mermaid
 flowchart LR
@@ -30,6 +30,7 @@ flowchart LR
 
 | Capability | What it does |
 | --- | --- |
+| Local web workbench | Drag/drop photos, draw crops, switch English/Chinese, compare evidence images, and download reports. |
 | Image preparation | Corrects EXIF orientation, strips metadata, preserves the input file, and records checksums. |
 | Distinctive crops | Saves native-resolution crops and nearest-neighbor enlargements in isolated directories. |
 | Google Lens assistance | Prints manual instructions by default; optional `--upload` uses a visible, disposable Chromium session. |
@@ -39,6 +40,12 @@ flowchart LR
 | Confidence requirements | Requires documented address and visual evidence before accepting stronger conclusions. |
 | Comparison reports | Builds self-contained HTML and CJK-capable PDFs with source links, paired images, and review history. |
 
+## Local workbench
+
+![Local web workbench with a fictional building](docs/assets/workbench-preview.jpg)
+
+After installing, run `photo-locate ui`. Click **Try offline demo** to explore without uploading a photo or setting up a key.
+
 ## Report preview
 
 The paired-image view below is generated from the offline synthetic demo, not a real location identification.
@@ -47,12 +54,12 @@ The paired-image view below is generated from the offline synthetic demo, not a 
 
 ## Quick start
 
-### Install v1.0.0 from source
+### Install v1.1.0 from source
 
-Requires **Python 3.10+**. macOS, Linux, and Windows are supported by the Python code; CI runs on Ubuntu with Python 3.10, 3.12, and 3.13.
+Requires **Python 3.10+**. CI covers Ubuntu with Python 3.10, 3.12, and 3.13, plus macOS 15 and Windows 2025 with Python 3.12.
 
 ```bash
-git clone --branch v1.0.0 https://github.com/xudaniel/photo-location-workflow.git
+git clone --branch v1.1.0 https://github.com/xudaniel/photo-location-workflow.git
 cd photo-location-workflow
 python3 -m venv .venv
 source .venv/bin/activate
@@ -62,17 +69,32 @@ python -m pip install -e '.[pdf]'
 
 On Windows PowerShell, use `python -m venv .venv` and `.venv\Scripts\Activate.ps1`. For HTML only, install with `python -m pip install -e .`.
 
-Alternatively, download the wheel from [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) and run `python -m pip install /path/to/photo_location_workflow-1.0.0-py3-none-any.whl`. This project is distributed on GitHub; a PyPI publication is not required for these installation methods.
+Alternatively, download the wheel from [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) and run `python -m pip install /path/to/photo_location_workflow-1.1.0-py3-none-any.whl`. This project is distributed on GitHub; a PyPI publication is not required for these installation methods.
+
+### Open the local workbench
+
+```bash
+photo-locate ui
+```
+
+1. Drop or choose a photo, draw a rectangle around a distinctive detail, and save the crop.
+2. Save the search image, open Google Lens separately, upload manually, and record candidates and authoritative addresses.
+3. Add sources, capture months, providers and reference images. Review matches and contradictions with paired images.
+4. Preserve review reasons, save a conclusion, and download HTML or PDF.
+
+The workbench listens only on `127.0.0.1` and uses the same `case.json` and validation rules as the CLI. No Node, frontend build or model key is needed. Use `--cases` to choose a case directory, `--port` to change the port, or `--no-open` to skip opening a browser. Avoid editing the same case from another process while it runs. Press Ctrl-C to stop; reopen it later to continue.
 
 ### Try it without uploading a photo
 
+Click **Try offline demo** in the workbench, or run:
+
 ```bash
-python examples/synthetic_demo.py --case cases/demo-v1
+photo-locate demo --case cases/demo-v1
 photo-locate check cases/demo-v1
 photo-locate report cases/demo-v1
 ```
 
-Open `cases/demo-v1/report.html` in a browser. The demo draws a **fictional building**, runs entirely offline, and leaves the conclusion at `candidate`. Use a new empty case directory when rerunning it. No private photographs or third-party map images are bundled.
+Open `cases/demo-v1/report.html` in a browser. The demo draws a **fictional building**, runs entirely offline, and leaves the conclusion at `candidate`. Choose a new empty case directory when rerunning. The installed wheel includes the demo and web assets. No private photographs or third-party map images are bundled.
 
 ## A complete investigation
 
@@ -207,13 +229,19 @@ This project targets public landmarks and scene comparison. It does not identify
 ## Development
 
 ```bash
-python -m pip install -e '.[dev,pdf,release]'
-python -m pytest -q
-python -m build
-python -m twine check dist/*
+uv sync --locked --extra dev --extra pdf --extra release
+uv run --locked --extra dev --extra pdf pytest -q
+uv run --locked --extra release python -m build
+uv run --locked --extra release python -m twine check dist/*.whl dist/*.tar.gz
 ```
 
 CI checks the test matrix, builds wheel/source distributions, validates package metadata, and smoke-tests the installed wheel. Tests use synthetic images, not live Google services. See [CONTRIBUTING](CONTRIBUTING.md), the [full command reference](docs/commands.md), [agent workflow](docs/agent-workflow.md), and [public case studies](docs/case-studies.md).
+
+## Reproducible development and releases
+
+`uv.lock` pins dependencies; `--locked` rejects an outdated lockfile. CI tests synthetic cases across three operating systems and checks a separately installed wheel, including its demo and web assets. Linux CI requires the CJK PDF test; other systems explicitly skip it when a suitable font is absent.
+
+Pushing a `vX.Y.Z` tag matching the package version triggers the release workflow. It runs the full CI suite before building the wheel, source archive and SHA-256 manifest and publishing a GitHub Release. See [CONTRIBUTING](CONTRIBUTING.md) for the release procedure. Bilingual issue forms and a PR template are included.
 
 ## License and credits
 

@@ -25,7 +25,7 @@ def test_source_has_no_private_metadata(investigation):
     with Image.open(investigation / "assets/source.png") as im:
         assert not im.getexif()
         assert im.size == (100, 80)
-    assert "input.jpg" not in (investigation / "case.json").read_text()
+    assert "input.jpg" not in (investigation / "case.json").read_text(encoding='utf-8')
     with pytest.raises(ValueError):
         init_case(investigation / "assets/source.png", investigation)
 
@@ -62,7 +62,7 @@ def test_confidence_requires_observed_evidence_and_resets_on_new_evidence(invest
 def test_report_escapes_external_text_and_rejects_unsafe_links(investigation):
     candidate(investigation, '<script>alert("x")</script>', "Address", "https://example.org/")
     report = render_html(investigation)
-    text = report.read_text()
+    text = report.read_text(encoding='utf-8')
     assert "<script>" not in text
     assert "&lt;script&gt;" in text
     assert "data:image/png;base64," in text
@@ -84,7 +84,7 @@ def test_report_rejects_escaping_asset_paths(investigation):
     path = investigation / "case.json"
     data = load(investigation)
     data["source"]["asset"] = "../input.jpg"
-    path.write_text(json.dumps(data))
+    path.write_text(json.dumps(data), encoding='utf-8')
     with pytest.raises(ValueError):
         render_html(investigation)
 
@@ -95,7 +95,15 @@ def test_pdf_with_cjk_and_comparison_images(investigation):
     candidate(investigation, "示例建筑", "虚构地址", "https://example.org/")
     add_evidence(investigation, "c1", "reference", "https://example.org/", "match", "中文备注与原图并排。", investigation / "assets/source.png")
     crop(investigation, (0, 0, 30, 30), "detail", 2)
-    output = render_pdf(investigation)
+    try:
+        output = render_pdf(investigation)
+    except ValueError as exc:
+        if 'PDF needs an embeddable CJK' not in str(exc):
+            raise
+        import os
+        if os.environ.get('PDF_REQUIRE_FONT') == '1':
+            raise
+        pytest.skip('No embeddable CJK font installed; Linux CI requires this test.')
     raw = output.read_bytes()
     assert raw.startswith(b"%PDF-")
     assert b"/FontFile2" in raw  # The actual font program travels with the report.
@@ -137,7 +145,7 @@ def test_reviews_preserve_contradiction_history(investigation):
     assert reviewed['reviews'][0]['from'] == 'contradiction'
     assert reviewed['notes'] == 'Apparent wrong side of road'
     conclude(investigation, 'c1', 'confirmed', 'Rechecked geometry')
-    assert 'Review history' in render_html(investigation).read_text()
+    assert 'Review history' in render_html(investigation).read_text(encoding='utf-8')
     review_evidence(investigation, 'e2', 'unclear', 'Insufficient detail')
     assert load(investigation)['conclusion']['level'] == 'candidate'
     assert len(load(investigation)['evidence'][1]['reviews']) == 2

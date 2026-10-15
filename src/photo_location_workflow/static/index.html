@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="local-token" content="__LOCAL_TOKEN__" />
+    <title>Photo Location Workbench</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Photo Location"
+        ><span class="brand-mark">◎</span
+        ><span>PHOTO LOCATION<small>WORKBENCH</small></span></a
+      >
+      <div class="sidebar-label" data-i18n="investigations"></div>
+      <button id="new-photo" class="new-button" data-i18n="newPhoto"></button>
+      <div id="case-list"></div>
+      <div class="sidebar-bottom">
+        <span class="status-dot"></span><span data-i18n="localOnly"></span
+        ><span id="version"></span>
+      </div>
+    </aside>
+    <main>
+      <header>
+        <div class="eyebrow" data-i18n="eyebrow"></div>
+        <div class="topline">
+          <div>
+            <h1 data-i18n="title"></h1>
+            <p data-i18n="subtitle"></p>
+          </div>
+          <div class="header-actions">
+            <button id="language" class="quiet">EN</button
+            ><button id="demo" class="secondary" data-i18n="tryDemo"></button>
+          </div>
+        </div>
+      </header>
+      <div id="notice" role="status" aria-live="polite" hidden></div>
+      <section id="landing">
+        <div class="landing-text">
+          <span class="pill" data-i18n="noKey"></span>
+          <h2 data-i18n="landingTitle"></h2>
+          <p data-i18n="landingText"></p>
+          <ol>
+            <li data-i18n="stepPhoto"></li>
+            <li data-i18n="stepDetail"></li>
+            <li data-i18n="stepEvidence"></li>
+            <li data-i18n="stepReport"></li>
+          </ol>
+        </div>
+        <button id="drop-zone" class="drop-zone">
+          <span class="upload-icon">↥</span
+          ><strong data-i18n="dropTitle"></strong
+          ><span data-i18n="dropHint"></span
+          ><small data-i18n="uploadPrivacy"></small>
+        </button>
+      </section>
+      <section id="workspace" hidden>
+        <nav class="steps">
+          <span data-i18n="stepPhoto"></span><span data-i18n="stepDetail"></span
+          ><span data-i18n="stepEvidence"></span
+          ><span data-i18n="stepReport"></span>
+        </nav>
+        <div class="work-grid">
+          <div class="left-column">
+            <section class="card photo-card">
+              <div class="card-heading">
+                <div>
+                  <span class="eyebrow" data-i18n="scene"></span>
+                  <h2 id="case-title"></h2>
+                </div>
+                <span id="image-size" class="muted"></span>
+              </div>
+              <p class="hint" data-i18n="selectHint"></p>
+              <div class="canvas-scroll">
+                <canvas
+                  id="crop-canvas"
+                  aria-label="Photo crop selection"
+                  tabindex="0"
+                ></canvas>
+              </div>
+              <form id="crop-form">
+                <div class="crop-controls">
+                  <label
+                    ><span data-i18n="detailName"></span
+                    ><input
+                      id="crop-label"
+                      name="label"
+                      required
+                      maxlength="48"
+                      value="detail-1" /></label
+                  ><label
+                    ><span data-i18n="scale"></span
+                    ><select name="scale">
+                      <option>2</option>
+                      <option selected>4</option>
+                      <option>8</option>
+                    </select></label
+                  ><button type="submit" data-i18n="saveCrop"></button>
+                </div>
+                <div class="coordinate-fields">
+                  <span data-i18n="selection"></span
+                  ><label
+                    >X<input
+                      name="x"
+                      type="number"
+                      min="0"
+                      required
+                      aria-label="Crop x" /></label
+                  ><label
+                    >Y<input
+                      name="y"
+                      type="number"
+                      min="0"
+                      required
+                      aria-label="Crop y" /></label
+                  ><label
+                    >W<input
+                      name="w"
+                      type="number"
+                      min="1"
+                      required
+                      aria-label="Crop width" /></label
+                  ><label
+                    >H<input
+                      name="h"
+                      type="number"
+                      min="1"
+                      required
+                      aria-label="Crop height"
+                  /></label>
+                </div>
+              </form>
+              <div id="crop-list" class="crop-list"></div>
+            </section>
+            <section class="card search-card">
+              <div>
+                <span class="eyebrow" data-i18n="search"></span>
+                <h2 data-i18n="searchTitle"></h2>
+                <p class="hint" data-i18n="searchHint"></p>
+              </div>
+              <div class="search-actions">
+                <select id="search-asset" aria-label="Image for search"></select
+                ><button
+                  id="download-image"
+                  class="secondary"
+                  data-i18n="downloadImage"
+                ></button
+                ><a
+                  class="button"
+                  href="https://www.google.com/?hl=en"
+                  target="_blank"
+                  rel="noreferrer"
+                  data-i18n="openLens"
+                ></a>
+              </div>
+            </section>
+          </div>
+          <div class="right-column">
+            <section class="card">
+              <div class="card-heading">
+                <h2 data-i18n="candidates"></h2>
+                <span id="confidence" class="pill"></span>
+              </div>
+              <div id="candidate-list"></div>
+              <details id="candidate-details">
+                <summary data-i18n="addCandidate"></summary>
+                <form id="candidate-form">
+                  <label
+                    ><span data-i18n="placeName"></span
+                    ><input name="name" required /></label
+                  ><label
+                    ><span data-i18n="address"></span
+                    ><input name="address" required /></label
+                  ><label
+                    ><span data-i18n="sourceUrl"></span
+                    ><input
+                      name="url"
+                      type="url"
+                      required
+                      placeholder="https://" /></label
+                  ><button type="submit" data-i18n="saveCandidate"></button>
+                </form>
+              </details>
+            </section>
+            <section class="card">
+              <div class="card-heading">
+                <h2 data-i18n="evidence"></h2>
+                <span id="evidence-count" class="muted"></span>
+              </div>
+              <div id="evidence-list"></div>
+              <details id="evidence-details">
+                <summary data-i18n="addEvidence"></summary>
+                <form id="evidence-form">
+                  <label
+                    ><span data-i18n="candidate"></span
+                    ><select name="candidate" required></select
+                  ></label>
+                  <div class="form-row">
+                    <label
+                      ><span data-i18n="evidenceKind"></span
+                      ><select name="kind">
+                        <option value="official" data-i18n="official"></option>
+                        <option
+                          value="reference"
+                          data-i18n="reference"
+                        ></option>
+                        <option
+                          value="streetview"
+                          data-i18n="streetview"
+                        ></option>
+                        <option
+                          value="text"
+                          data-i18n="text"
+                        ></option></select></label
+                    ><label
+                      ><span data-i18n="verdict"></span
+                      ><select name="verdict">
+                        <option value="match" data-i18n="match"></option>
+                        <option value="unclear" data-i18n="unclear"></option>
+                        <option
+                          value="contradiction"
+                          data-i18n="contradiction"
+                        ></option></select
+                    ></label>
+                  </div>
+                  <label
+                    ><span data-i18n="sourceUrl"></span
+                    ><input
+                      name="url"
+                      type="url"
+                      required
+                      placeholder="https://"
+                  /></label>
+                  <div class="form-row">
+                    <label
+                      ><span data-i18n="captured"></span
+                      ><input
+                        name="captured"
+                        placeholder="2026-06 / unknown" /></label
+                    ><label
+                      ><span data-i18n="provider"></span><input name="provider"
+                    /></label>
+                  </div>
+                  <label
+                    ><span data-i18n="observation"></span
+                    ><textarea name="notes" required rows="3"></textarea></label
+                  ><label
+                    ><span data-i18n="referenceImage"></span
+                    ><input name="image" type="file" accept="image/*" /></label
+                  ><button type="submit" data-i18n="saveEvidence"></button>
+                </form>
+              </details>
+            </section>
+            <section class="card">
+              <h2 data-i18n="conclusion"></h2>
+              <form id="conclusion-form">
+                <label
+                  ><span data-i18n="candidate"></span
+                  ><select name="candidate" required></select></label
+                ><label
+                  ><span data-i18n="confidence"></span
+                  ><select name="level">
+                    <option value="candidate" data-i18n="candidate"></option>
+                    <option value="high" data-i18n="high"></option>
+                    <option
+                      value="confirmed"
+                      data-i18n="confirmed"
+                    ></option></select></label
+                ><label
+                  ><span data-i18n="reason"></span
+                  ><textarea name="note" required rows="2"></textarea></label
+                ><button
+                  type="submit"
+                  class="secondary"
+                  data-i18n="saveConclusion"
+                ></button>
+              </form>
+              <div id="integrity" class="integrity"></div>
+              <div class="export-row">
+                <button id="export-html" data-i18n="exportHtml"></button
+                ><button
+                  id="export-pdf"
+                  class="secondary"
+                  data-i18n="exportPdf"
+                ></button>
+              </div>
+              <p class="hint" data-i18n="reviewReminder"></p>
+            </section>
+          </div>
+        </div>
+      </section>
+      <footer>
+        <span data-i18n="footer"></span
+        ><span>MIT · Photo Location Workflow</span>
+      </footer>
+    </main>
+    <input id="photo-input" type="file" accept="image/*" hidden />
+  </body>
+</html>
