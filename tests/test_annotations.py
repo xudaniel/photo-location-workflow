@@ -114,3 +114,15 @@ def test_cli_can_record_regions(paired_case):
     result = subprocess.run([sys.executable, '-m', 'photo_location_workflow', 'annotate', str(paired_case), '--evidence', 'e1', '--label', 'Window', '--source-box', '10,10,20,20', '--reference-box', '30,20,40,40'], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout)['source_box'] == [10, 10, 20, 20]
+
+
+def test_overlapping_regions_keep_their_number_badges_separate():
+    from photo_location_workflow.comparison import badge_position
+    used = []
+    for _ in range(4):
+        badge_position((10, 10, 95, 60), (18, 20), (100, 80), used)
+    assert len(used) == 4
+    for i, rect in enumerate(used):
+        assert 0 <= rect[0] < rect[2] <= 100 and 0 <= rect[1] < rect[3] <= 80
+        for other in used[i+1:]:
+            assert rect[2] <= other[0] or other[2] <= rect[0] or rect[3] <= other[1] or other[3] <= rect[1]

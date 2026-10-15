@@ -487,6 +487,7 @@ export class ComparisonWorkbench {
         this.images[side].width * g.scale,
         this.images[side].height * g.scale,
       );
+      const badges = [];
       const box = (region, number, selected, draft = false) => {
         const [x, y, w, h] = region,
           px = g.left + x * g.scale,
@@ -500,14 +501,20 @@ export class ComparisonWorkbench {
         c.fillRect(px, py, pw, ph);
         c.strokeRect(px, py, pw, ph);
         c.setLineDash([]);
-        if (number) {
-          c.font = "bold 13px system-ui";
-          const tw = c.measureText(String(number)).width + 14;
-          c.fillStyle = "#173e32";
-          c.fillRect(px, py, tw, 23);
-          c.fillStyle = "#ffe39d";
-          c.fillText(String(number), px + 7, py + 16);
-        }
+        if (
+          number &&
+          px + pw >= 0 &&
+          py + ph >= 0 &&
+          px < g.width &&
+          py < g.height
+        )
+          badges.push({
+            x: px,
+            y: py,
+            right: px + pw,
+            bottom: py + ph,
+            number,
+          });
       };
       (this.evidence?.annotations || []).forEach((a) =>
         box(
@@ -517,6 +524,48 @@ export class ComparisonWorkbench {
         ),
       );
       if (this.drafts[side]) box(this.drafts[side], null, false, true);
+      const occupied = [];
+      c.font = "bold 13px system-ui";
+      for (const badge of badges) {
+        const bw = c.measureText(String(badge.number)).width + 14,
+          bh = 23;
+        const positions = [
+          [badge.x, badge.y],
+          [badge.right - bw, badge.y],
+          [badge.x, badge.bottom - bh],
+          [badge.right - bw, badge.bottom - bh],
+          [badge.x, badge.y - bh - 3],
+          [badge.x, badge.bottom + 3],
+          ...Array.from({ length: 11 }, (_, i) => [
+            badge.x,
+            badge.y + (i + 1) * (bh + 3),
+          ]),
+        ];
+        let position = null;
+        for (const [x, y] of positions) {
+          const bx = Math.max(0, Math.min(x, g.width - bw)),
+            by = Math.max(0, Math.min(y, g.height - bh)),
+            r = [bx, by, bx + bw, by + bh];
+          if (
+            !occupied.some(
+              (o) =>
+                r[0] < o[2] + 2 &&
+                r[2] + 2 > o[0] &&
+                r[1] < o[3] + 2 &&
+                r[3] + 2 > o[1],
+            )
+          ) {
+            occupied.push(r);
+            position = [bx, by];
+            break;
+          }
+        }
+        const [bx, by] = position || [badge.x, badge.y];
+        c.fillStyle = "#173e32";
+        c.fillRect(bx, by, bw, bh);
+        c.fillStyle = "#ffe39d";
+        c.fillText(String(badge.number), bx + 7, by + 16);
+      }
     });
   }
 }
