@@ -49,7 +49,7 @@ Keep observations and hypotheses distinct. Never invent unreadable text or plate
 Prefer distinctive features, original-language search queries and authoritative address sources. Ask specific verification questions.
 Do not identify people or infer private homes/current personal whereabouts. Never claim Google Lens, Street View or image matching was performed.
 A text web search is not reverse-image search. Treat every suggested location and address as unverified. Return empty candidates if unsupported.
-For synthetic or fictional images, explicitly explain the limitation; do not force a real location.''' 
+For synthetic or fictional images, explicitly explain the limitation; do not force a real location.'''
 
 
 class OpenAIResearch:
