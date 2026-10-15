@@ -1,6 +1,7 @@
 """Offline demo with generated illustrations, not user photographs."""
 
 from pathlib import Path
+import argparse
 import tempfile
 
 from PIL import Image, ImageDraw
@@ -10,7 +11,9 @@ from photo_location_workflow.report import render_html
 
 
 def main():
-    case = Path("cases/demo")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--case', type=Path, default=Path('cases/demo'))
+    case = parser.parse_args().case
     with tempfile.TemporaryDirectory() as folder:
         photo = Path(folder) / "synthetic.png"
         im = Image.new("RGB", (1000, 650), "#dce6d6")

@@ -1,0 +1,116 @@
+# Command reference / 命令手册
+
+All commands support `--help`. Successful commands print JSON to stdout; failures print an error to stderr. The interactive Lens assistant also displays progress and prompts. Paths can contain spaces when quoted. / 所有命令支持 `--help`；成功输出 JSON，失败向 stderr 输出错误。交互式 Lens 另有提示。含空格的路径请加引号。
+
+| Exit code / 退出码 | Meaning / 含义 |
+| --- | --- |
+| `0` | Completed successfully / 成功。 |
+| `1` | `check` found integrity errors / `check` 发现文件完整性错误。 |
+| `2` | Invalid arguments or a handled operation error / 参数或操作错误。 |
+
+## `init`
+
+```bash
+photo-locate init photo.jpg --case cases/trip
+```
+
+Creates a new investigation in an empty directory. Copies decoded pixels to a PNG, normalizes EXIF orientation, strips metadata, and records original/normalized SHA-256 values. The original file remains unchanged. / 在空目录创建调查，校正方向、移除副本元数据并保存 SHA-256；原文件不变。
+
+## `crop`
+
+```bash
+photo-locate crop cases/trip --box 10,20,200,120 --label sign --scale 4
+```
+
+`--box` is `x,y,width,height` in normalized image pixels. `--scale` defaults to 4 and accepts 1–16, subject to a 40-million-pixel enlarged-image limit. Labels accept 1–48 Unicode word characters or hyphens; paths and duplicate labels are rejected. Outputs native PNG and nearest-neighbor PNG under `assets/crops/LABEL/`. / 坐标基于校正方向后的副本；放大倍率 1–16，放大后不超过四千万像素。标签支持中文；禁止越界、路径和重名。
+
+## `lens`
+
+```bash
+photo-locate lens cases/trip
+photo-locate lens cases/trip --asset assets/crops/sign/native.png
+photo-locate lens cases/trip --asset assets/crops/sign/native.png --upload
+```
+
+Without `--upload`, prints instructions and sends nothing. With it, requires the `browser` extra, installed Chromium, a display, and an interactive terminal. Only a listed prepared source/native crop can be selected; changed prepared assets are rejected. / 默认只输出说明；`--upload` 需要浏览器扩展、Chromium、显示环境和交互终端。仅允许准备好的原图副本或原始裁切。
+
+Captures are unverified research materials. Status values include `captured_unverified`, `not_results`, `interrupted`, and `capture_failed`. / 搜索截图不是已确认的定位证据；状态区分搜索结果、非结果页、中断和截图失败。
+
+## `candidate`
+
+```bash
+photo-locate candidate cases/trip --name 'Landmark' --address 'Public address' \
+  --url 'https://example.org/official-page'
+```
+
+Creates `c1`, `c2`, etc., with a Google Maps search URL. Requires a nonempty name/address and an HTTP(S) source without embedded credentials. It does not fetch or authenticate the page. / 建立候选及地图链接；不自动读取或认证来源页面。
+
+## `evidence`
+
+```bash
+photo-locate evidence cases/trip --candidate c1 --kind reference \
+  --url 'https://example.org/reference' --verdict unclear \
+  --notes 'Window alignment is uncertain.' --image reference.jpg
+
+photo-locate evidence cases/trip --candidate c1 --kind streetview \
+  --url 'https://www.google.com/maps/YOUR_VIEW' --verdict match \
+  --captured 2026-06 --provider 'Google Street View' \
+  --notes 'Windows, lights, and road geometry align.' --image panorama.png
+```
+
+| Option / 参数 | Accepted values / 取值 |
+| --- | --- |
+| `--kind` | `official`, `streetview`, `reference`, `text` |
+| `--verdict` | `match`, `unclear`, `contradiction` |
+| `--captured` | Required for `streetview`: `YYYY-MM` or `unknown` / 街景必填。 |
+| `--provider` | Optional provider/contributor description / 可选提供者说明。 |
+| `--image` | Optional local screenshot/reference; copied without metadata / 可选附图，导入时移除元数据。 |
+
+Creates `e1`, `e2`, etc. Notes and source URLs are mandatory. Image records include SHA-256. A new observation resets the conclusion to `candidate`. / 备注及来源必填；新证据会使结论退回候选。
+
+## `review`
+
+```bash
+photo-locate review cases/trip --evidence e2 --verdict match \
+  --reason 'Rechecked the opposite-facing camera angle; geometry agrees.'
+```
+
+Changes the current verdict while preserving the original observation, original verdict, and every previous review. Requires a reason and resets the conclusion. Reports expose the review trail. / 修订当前判断，保留原始观察、最初判断和每次复审；理由必填，结论退回候选，报告显示历史。
+
+## `check`
+
+```bash
+photo-locate check cases/trip
+```
+
+Offline checks of stored asset paths, file existence, available checksums, duplicate IDs, candidate references, and the selected conclusion reference. Missing legacy checksums are warnings. It does not verify page contents, GPS location, image authenticity, or factual judgments. / 离线检查文件及记录引用；旧文件缺少校验和仅警告，不验证事实。
+
+## `conclude`
+
+```bash
+photo-locate conclude cases/trip --candidate c1 --level high \
+  --note 'Official address and attached reference match; no panorama is available.'
+```
+
+Levels: `unknown`, `candidate`, `high`, `confirmed`. A reason is required. Stronger levels require a valid local case, an `official` match, an attached `reference`/`streetview` match, and no current contradiction for that candidate. `confirmed` additionally requires an attached matching `streetview` record. Human-entered statements are not independently verified. / 等级约束详见 README；它们不替代人工核验。
+
+## `report`
+
+```bash
+photo-locate report cases/trip
+photo-locate report cases/trip --format pdf
+photo-locate report cases/trip --format pdf --font-path /path/to/cjk-font.ttf
+photo-locate report cases/trip --output exports/trip.html
+```
+
+Default HTML embeds images and makes no automatic network requests. Clicking a source link opens the external site. PDF needs the `pdf` extra and a suitable CJK TrueType font. Parent output directories are created; the extension must match the format, and outputs cannot overwrite case assets. Integrity failures block export. / HTML 图片内嵌、无自动网络请求；点击来源才访问外部。PDF 需字体；完整性失败时拒绝导出。
+
+## `status` and version / 状态与版本
+
+```bash
+photo-locate status cases/trip
+photo-locate --version
+python -m photo_location_workflow --help
+```
+
+`status` prints the local record without modifying it. / `status` 只读显示调查记录。

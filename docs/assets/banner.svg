@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="title desc">
+<title id="title">Photo Location Workflow</title><desc id="desc">A landscape, a location pin, and a trail connecting a photograph to evidence.</desc>
+<defs><linearGradient id="bg" x1="0" x2="1" y2="1"><stop stop-color="#102f28"/><stop offset="1" stop-color="#24614c"/></linearGradient><pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#b8dcbf" stroke-opacity=".06"/></pattern></defs>
+<rect width="1280" height="360" rx="24" fill="url(#bg)"/><rect width="1280" height="360" rx="24" fill="url(#grid)"/>
+<path d="M790 360L950 160L1060 280L1150 180L1280 330V360Z" fill="#739d75" opacity=".18"/><path d="M890 360L1085 220L1280 355V360Z" fill="#b4d0a0" opacity=".13"/>
+<text x="64" y="76" fill="#b7d6b7" font-family="system-ui, sans-serif" font-size="13" letter-spacing="4">FROM A PHOTO TO A VERIFIED PLACE</text>
+<text x="60" y="145" fill="#f7faee" font-family="system-ui, sans-serif" font-weight="700" font-size="48">Photo Location</text><text x="60" y="204" fill="#f7faee" font-family="system-ui, sans-serif" font-weight="700" font-size="48">Workflow</text>
+<text x="64" y="256" fill="#d2e2cd" font-family="system-ui, sans-serif" font-size="20">Search. Compare. Verify. Keep the evidence.</text>
+<rect x="64" y="286" width="101" height="28" rx="14" fill="#d8eabd"/><text x="114" y="305" fill="#183d30" font-family="system-ui, sans-serif" text-anchor="middle" font-size="12" font-weight="600">LOCAL FIRST</text>
+<rect x="176" y="286" width="120" height="28" rx="14" fill="#b1d9c4"/><text x="236" y="305" fill="#183d30" font-family="system-ui, sans-serif" text-anchor="middle" font-size="12" font-weight="600">HUMAN REVIEW</text>
+<rect x="307" y="286" width="92" height="28" rx="14" fill="#f4e8b8"/><text x="353" y="305" fill="#183d30" font-family="system-ui, sans-serif" text-anchor="middle" font-size="12" font-weight="600">MIT LICENSE</text>
+<rect x="825" y="89" width="160" height="119" rx="12" fill="#eef4dc" transform="rotate(-7 905 149)"/><rect x="840" y="105" width="130" height="82" rx="5" fill="#9cbea1" transform="rotate(-7 905 149)"/>
+<path d="M846 184L878 140L906 162L929 131L966 169" fill="none" stroke="#32664f" stroke-width="5"/>
+<path d="M955 244C990 264 1059 262 1088 203" stroke="#e8d69b" stroke-width="3" stroke-dasharray="6 7" fill="none"/><circle cx="955" cy="244" r="6" fill="#e8d69b"/>
+<path d="M1094 87C1066 87 1044 109 1044 137C1044 174 1094 214 1094 214C1094 214 1144 174 1144 137C1144 109 1122 87 1094 87Z" fill="#e8d69b"/><circle cx="1094" cy="136" r="18" fill="#214c3c"/>
+</svg>

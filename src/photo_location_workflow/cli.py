@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .core import KINDS, LEVELS, VERDICTS, add_evidence, candidate, conclude, crop, init_case, load
+from .core import KINDS, LEVELS, VERDICTS, add_evidence, candidate, check_case, conclude, crop, init_case, load, review_evidence, selected_asset
 from .lens import LENS_URL, run_lens
 from .report import render_html, render_pdf
 
@@ -33,7 +33,7 @@ def parser():
     cut.add_argument("--scale", type=int, default=4)
     search = sub.add_parser("lens", help="Show search instructions; upload only with explicit --upload.")
     search.add_argument("case", type=Path)
-    search.add_argument("--asset", help="Native crop path from case.json, e.g. assets/facade.png.")
+    search.add_argument("--asset", help="Native crop path from case.json, e.g. assets/crops/facade/native.png.")
     search.add_argument("--upload", action="store_true", help="Send the selected prepared image to Google via a visible browser.")
     cand = sub.add_parser("candidate", help="Record a candidate, address and source URL.")
     cand.add_argument("case", type=Path)
@@ -49,6 +49,14 @@ def parser():
     ev.add_argument("--notes", required=True)
     ev.add_argument("--image", type=Path)
     ev.add_argument("--captured", help="Street View/360 capture month: YYYY-MM or unknown.")
+    ev.add_argument("--provider", help="E.g. Google Street View, or a named visitor's 360 panorama.")
+    review = sub.add_parser('review', help='Revise a verdict without erasing its earlier judgment.')
+    review.add_argument('case', type=Path)
+    review.add_argument('--evidence', required=True)
+    review.add_argument('--verdict', choices=VERDICTS, required=True)
+    review.add_argument('--reason', required=True)
+    check = sub.add_parser('check', help='Check local asset paths, checksums and evidence references.')
+    check.add_argument('case', type=Path)
     done = sub.add_parser("conclude", help="Assign a human-reviewed confidence; evidence requirements are enforced.")
     done.add_argument("case", type=Path)
     done.add_argument("--candidate", required=True)
@@ -75,13 +83,17 @@ def main(argv=None):
             if args.upload:
                 result = run_lens(args.case, args.asset)
             else:
-                data = load(args.case)
-                result = {"url": LENS_URL, "prepared_image": str(args.case / (args.asset or data["source"]["asset"])),
+                _, path = selected_asset(args.case, args.asset)
+                result = {"url": LENS_URL, "prepared_image": str(path),
                           "instruction": "Open Google, select Search by image and upload this copy. No upload performed. Use --upload for the optional visible-browser assistant."}
         elif args.command == "candidate":
             result = candidate(args.case, args.name, args.address, args.url)
         elif args.command == "evidence":
-            result = add_evidence(args.case, args.candidate, args.kind, args.url, args.verdict, args.notes, args.image, args.captured)
+            result = add_evidence(args.case, args.candidate, args.kind, args.url, args.verdict, args.notes, args.image, args.captured, args.provider)
+        elif args.command == 'review':
+            result = review_evidence(args.case, args.evidence, args.verdict, args.reason)
+        elif args.command == 'check':
+            result = check_case(args.case)
         elif args.command == "conclude":
             result = conclude(args.case, args.candidate, args.level, args.note)
         elif args.command == "status":
@@ -89,7 +101,7 @@ def main(argv=None):
         else:
             result = render_pdf(args.case, args.output, args.font_path) if args.format == "pdf" else render_html(args.case, args.output)
         print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
-        return 0
+        return 1 if args.command == 'check' and not result['ok'] else 0
     except (ValueError, OSError, KeyError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2

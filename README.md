@@ -1,142 +1,220 @@
-# Photo Location Workflow · 看图找地点
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="Photo Location Workflow — from a photo to a verified place" width="100%">
+</p>
+<p align="center">
+  <a href="https://github.com/xudaniel/photo-location-workflow/actions/workflows/tests.yml"><img src="https://github.com/xudaniel/photo-location-workflow/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+  <a href="https://github.com/xudaniel/photo-location-workflow/releases"><img src="https://img.shields.io/github/v/release/xudaniel/photo-location-workflow?color=24795c" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/Python-3.10%2B-386b58" alt="Python 3.10+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-d9bd70" alt="MIT License"></a>
+</p>
+<p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a><br>
+<a href="#quick-start">Quick start</a> · <a href="docs/commands.md">Command reference</a> · <a href="docs/case-studies.md">Case studies</a> · <a href="CHANGELOG.md">Changelog</a></p>
 
-把“看起来像某地”变成一条可以复核的证据链。
+# A place. A trail of evidence.
 
-**整图反向搜索 → 关键局部搜索 → 官网地址 → Google 地图街景/360° → 对比报告。**
+**Photo Location Workflow** turns photo-location research into a repeatable, reviewable process: reverse-image search, distinctive-detail crops, authoritative address checks, Street View comparisons, and an evidence report.
 
-这是本地运行的 Python 命令行工具。它负责图片准备、可选的 Google Lens 浏览器上传、候选与证据记录、结论约束，以及双图 HTML/PDF 报告。**视觉判断由使用者或连接此工具的 AI 助手完成**，程序不会把相似搜索结果自动判为拍摄地点，也不需要付费模型 API。
+The CLI handles preparation, records, integrity checks, and reports. **You or your AI assistant make the visual judgments.** It does not run a geolocation model, automatically identify landmarks, or treat a search suggestion as a verified answer. No model API key is required.
 
-English: A local, evidence-first photo-location workflow. Prepare metadata-free images, crop distinctive details, optionally upload to Google Lens in a visible browser, review authoritative addresses and Street View, and export a comparison report. Human review is required; this is not an automatic geolocation model.
+```mermaid
+flowchart LR
+    A[Photo] --> B[Whole-image search]
+    B --> C[Distinctive crop]
+    C --> D[Official name + address]
+    D --> E[Street View / visitor panorama]
+    E --> F[Human review + evidence log]
+    F --> G[Offline HTML / PDF report]
+```
 
-## 安装
+## What you get
 
-需要 Python 3.10+。
+| Capability | What it does |
+| --- | --- |
+| Image preparation | Corrects EXIF orientation, strips metadata, preserves the input file, and records checksums. |
+| Distinctive crops | Saves native-resolution crops and nearest-neighbor enlargements in isolated directories. |
+| Google Lens assistance | Prints manual instructions by default; optional `--upload` uses a visible, disposable Chromium session. |
+| Structured evidence | Records candidates, addresses, source URLs, capture months, providers, matches, uncertainty, and contradictions. |
+| Review history | Revises a verdict with a mandatory explanation while retaining the previous judgment. |
+| Integrity checks | Detects missing or changed assets, unsafe paths, and broken candidate references. |
+| Confidence requirements | Requires documented address and visual evidence before accepting stronger conclusions. |
+| Comparison reports | Builds self-contained HTML and CJK-capable PDFs with source links, paired images, and review history. |
+
+## Report preview
+
+The paired-image view below is generated from the offline synthetic demo, not a real location identification.
+
+![Synthetic report comparison preview](docs/assets/report-preview.jpg)
+
+## Quick start
+
+### Install v1.0.0 from source
+
+Requires **Python 3.10+**. macOS, Linux, and Windows are supported by the Python code; CI runs on Ubuntu with Python 3.10, 3.12, and 3.13.
 
 ```bash
-git clone https://github.com/xudaniel/photo-location-workflow.git
+git clone --branch v1.0.0 https://github.com/xudaniel/photo-location-workflow.git
 cd photo-location-workflow
 python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -e '.[pdf]'
 ```
 
-Windows 使用 `.venv\Scripts\activate`。仅生成 HTML 时，安装 `pip install -e .` 即可。
+On Windows PowerShell, use `python -m venv .venv` and `.venv\Scripts\Activate.ps1`. For HTML only, install with `python -m pip install -e .`.
 
-可选的可视浏览器助手：
+Alternatively, download the wheel from [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) and run `python -m pip install /path/to/photo_location_workflow-1.0.0-py3-none-any.whl`. This project is distributed on GitHub; a PyPI publication is not required for these installation methods.
+
+### Try it without uploading a photo
 
 ```bash
-python -m pip install -e '.[browser]'
-playwright install chromium
+python examples/synthetic_demo.py --case cases/demo-v1
+photo-locate check cases/demo-v1
+photo-locate report cases/demo-v1
 ```
 
-## 一次完整调查
+Open `cases/demo-v1/report.html` in a browser. The demo draws a **fictional building**, runs entirely offline, and leaves the conclusion at `candidate`. Use a new empty case directory when rerunning it. No private photographs or third-party map images are bundled.
 
-### 1. 整图搜索
+## A complete investigation
+
+### 1 · Prepare the image and search the whole scene
 
 ```bash
 photo-locate init /path/to/photo.jpg --case cases/trip
 photo-locate lens cases/trip
 ```
 
-第一条命令保存一份已校正方向、移除 EXIF/GPS 的无损 PNG 副本，原文件不变。第二条命令只显示 Google 地址和待上传副本路径，**不会发送图片**。到 Google 点击“Search by image”，上传副本。
+`init` writes an orientation-normalized, metadata-free PNG copy and records the original file's SHA-256. It does not copy your absolute source path into the investigation record. `lens` prints the prepared file and Google URL; it does **not** upload by default.
 
-如果希望程序打开独立 Chromium 并尝试上传，显式执行：
+For the optional visible-browser assistant:
 
 ```bash
+python -m pip install -e '.[browser]'
+playwright install chromium
 photo-locate lens cases/trip --upload
 ```
 
-`--upload` 会将选定图片发送给 Google。浏览器保持可见，待你检查结果并按 Enter 后，保存本地搜索链接和截图；搜索结果仍标为未验证。遇到登录、同意弹窗、验证码或界面变化，由你在浏览器完成或停止。程序不绕过验证码，不调用未经公开的 Lens 接口。Google 界面随时可能变化，手动上传是备用路径。
+`--upload` sends the selected prepared image to Google. Inspect the results and press Enter in the interactive terminal to save a local capture and visible links. Login, consent screens, CAPTCHAs, or changed controls may require your manual action. The assistant does not bypass them or call an undocumented Lens API. Manual Google Lens upload remains available.
 
-### 2. 找最独特的局部
+### 2 · Search a distinctive crop
 
-建筑立面、窗组、门框、招牌、瀑顶岩块通常比整片森林更有辨识度。下面坐标仅为语法示例，需按自己的图片修改：
+Windows, signs, entrances, unusual rocks, and waterfall crests are often more useful than generic scenery. Replace these example coordinates with your own:
 
 ```bash
 photo-locate crop cases/trip --box 0,100,200,300 --label facade --scale 4
-photo-locate lens cases/trip --asset assets/facade.png --upload
+photo-locate lens cases/trip --asset assets/crops/facade/native.png --upload
 ```
 
-坐标为**校正方向后的图片**中的 `x,y,width,height`。工具同时保存原始像素裁切和最近邻放大图。放大不会创造文字细节；模糊车牌应记为“看不清”。车牌登记地也不等于拍摄地。
+Coordinates are `x,y,width,height` in the **orientation-corrected copy**. The CLI returns native and enlarged image paths. Enlargement reveals the existing pixels; it cannot reconstruct unreadable signs or license plates. A vehicle's registration location does not establish the shooting location.
 
-### 3. 核对官网与地址
+### 3 · Record a candidate and verify its address
 
-找到强候选后打开其官网或可靠旅游机构页面，核对名称、完整地址，并记录**实际看到的内容**。下面用公开景点演示格式，不代表工具已替你的照片完成核对。
+The following commands illustrate a public landmark. Record an `official` match only after actually checking the cited page for your investigation.
 
 ```bash
 photo-locate candidate cases/trip \
-  --name '銚子大滝' \
+  --name '銚子大滝 / Chōshi Ōtaki' \
   --address '青森県十和田市大字奥瀬字奥入瀬' \
   --url 'https://www.tohokukanko.jp/attractions/detail_1573.html'
 
 photo-locate evidence cases/trip --candidate c1 --kind official \
   --url 'https://www.tohokukanko.jp/attractions/detail_1573.html' \
-  --verdict match --notes '在官方旅游页面核对了景点名称与所在地。'
+  --verdict match --notes 'Checked the landmark name and address on the official tourism page.'
 ```
 
-`candidate` 输出的 `maps_url` 可直接打开 Google 地图。`official` 是你对来源的分类，工具不能替你判断页面真实性。
+The candidate record includes an encoded Google Maps link. Source classifications and observations are supplied by the reviewer; the CLI does not authenticate a website's claims.
 
-### 4. 街景 / 360° 交叉验证
+### 4 · Compare Street View or a visitor panorama
 
-在地图选择“Street View & 360°”。建筑场景核对窗户、圆灯、门框、道路走向、挡墙、树带、路牌、山形；自然景点核对岩壁、瀑顶分段等稳定地形。保存**自己实际查看过的**截图和该视角链接。
+Open the candidate in Google Maps and select **Street View & 360°**. Match stable details: window groups, lights, entrances, road direction, retaining walls, signs, mountain profiles, or exposed rock layers. Distinguish official road imagery from visitor-uploaded panoramas.
 
-记录影像拍摄月份，区分官方道路街景与游客上传全景，区分夏季绿叶和秋季红叶。以下 URL、日期、截图路径需要替换为你实际核对的材料：
+Replace the URL, capture month, screenshot, and notes below with the material you actually inspected:
 
 ```bash
 photo-locate evidence cases/trip --candidate c1 --kind streetview \
-  --url 'https://www.google.com/maps/实际视角链接' \
-  --captured 2018-10 --image /path/to/observed-panorama.png \
-  --verdict match --notes '游客360全景：瀑顶中央岩块、右侧层状岩壁和左岸树木位置对应。'
+  --url 'https://www.google.com/maps/YOUR_OBSERVED_VIEW' \
+  --captured 2018-10 --provider 'Visitor 360 panorama; contributor name' \
+  --image /path/to/observed-view.png --verdict match \
+  --notes 'The central crest rock, right-side layered wall, and left-bank tree positions align.'
 ```
 
-无法读取拍摄月份时用 `--captured unknown`。不确定用 `--verdict unclear`；存在反例用 `contradiction`。所有记录均保存在本地 `case.json`。不要把暂时无法解释的反例删掉后宣布确认。
+Use `--captured unknown` if no capture month is visible. Use `unclear` when details are inconclusive, or `contradiction` when they conflict. The CLI imports a metadata-free copy of the screenshot and records its checksum.
 
-### 5. 结论与双图报告
+### 5 · Review, check, and conclude
+
+If new evidence changes a judgment, preserve the earlier verdict:
+
+```bash
+photo-locate review cases/trip --evidence e2 --verdict unclear \
+  --reason 'The viewpoint is too distant to verify the rock detail.'
+photo-locate check cases/trip
+```
+
+After the required evidence is actually in place:
 
 ```bash
 photo-locate conclude cases/trip --candidate c1 --level confirmed \
-  --note '官网地址及多个稳定地形特征对应；精确站位未测定。'
+  --note 'Official address and reviewed panorama agree; exact camera position is unmeasured.'
 photo-locate report cases/trip
 photo-locate report cases/trip --format pdf
-photo-locate status cases/trip
 ```
 
-默认输出 `cases/trip/report.html` 和 `report.pdf`。HTML 内嵌图片，双击即可离线查看。PDF 会检测并嵌入常见系统中文 TrueType 字体（macOS Arial Unicode、Linux 文泉驿、Windows 微软雅黑）；没有可用字体时需用 `--font-path /path/to/font.ttf` 或 `.ttc` 指定含所需中日文字形的字体。Ubuntu/Debian 可安装 `fonts-wqy-microhei`。工具不会输出依赖未嵌入中文字体的 PDF。分享 PDF 前打开检查页面与文字。
+A revision or new observation resets the conclusion to `candidate`. The example `unclear` revision above must be resolved through a further documented review or another matching panorama before that evidence supports `confirmed`.
 
-置信等级是**人工审阅标签**，不是模型概率：
+## Confidence is a review label
 
-| 等级 | 约束 |
+| Level | Requirements enforced by the CLI |
 | --- | --- |
-| `unknown` | 尚未识别 |
-| `candidate` | 有候选，但证据尚不足 |
-| `high` | 官网地址匹配 + 附图的视觉匹配；无未解决反例 |
-| `confirmed` | 在 `high` 基础上，另有已审阅且附图的街景/360°匹配 |
+| `unknown` | No settled identification. |
+| `candidate` | A working hypothesis. |
+| `high` | Matching official-address record + attached matching visual evidence + valid local assets + no unresolved contradictions. |
+| `confirmed` | All `high` requirements, plus a matching, attached Street View/360 record. |
 
-这些约束只检查记录是否齐全，不验证你填写的陈述是否真实。新增证据会将旧结论退回 `candidate`，需重新审阅。没有街景覆盖时可以保留 `high` 或更低等级，并说明限制。
+These checks enforce the **shape and completeness of the evidence record**, not the truth of the reviewer's statements. SHA-256 detects file changes; it does not prove that an image is authentic. Unsupported details should remain unresolved. If no panorama exists, retain `high` or a lower label and explain the limit.
 
-## 无私人照片的离线演示
+## Reports and fonts
 
-```bash
-python examples/synthetic_demo.py
+- **HTML:** self-contained, responsive, offline, printable; includes paired images, evidence labels, provider/date information, and review history.
+- **PDF:** paired images, clickable sources, CJK text, crop appendices, and embedded TrueType fonts. Requires the `pdf` extra.
+- **Font detection:** common macOS Arial Unicode, Linux WenQuanYi, and Windows Microsoft YaHei paths. If necessary, pass `--font-path /path/to/font.ttf` or `.ttc`. On Ubuntu/Debian, `fonts-wqy-microhei` supplies a suitable font. Your chosen font must cover the characters in your report.
+- **Output:** defaults to `report.html` or `report.pdf` inside the case. `--output` creates parent directories; exporting into the investigation's asset directory or to a mismatched file extension is rejected.
+
+Open exported PDFs before sharing to verify layout and glyphs. Reports contain the images, notes, and URLs you attach.
+
+## Local data and privacy
+
+```text
+cases/trip/
+├── case.json                    # candidates, evidence, judgments, checksums
+├── assets/
+│   ├── source.png               # metadata-free, orientation-normalized copy
+│   ├── crops/facade/            # native.png + pixels.png
+│   └── evidence/e1.png          # imported reference image, when attached
+├── report.html
+└── report.pdf
 ```
 
-生成一组程序绘制的虚构建筑及 HTML 报告到 `cases/demo/`；不联网、不上传，结论保留为候选。公开仓库不附用户照片、地图截图或有版权的参考照片。[真实案例的方法说明](docs/case-studies.md)只引用公开地点与来源。
+The code does not read `.env`, require paid model keys, or reuse your normal browser profile. Search captures and investigations stay local unless you upload or share them. Metadata removal does **not** redact visible faces, plates, or text. `.gitignore` excludes common investigation/output folders and raster/PDF files; it is a convenience, not a universal privacy guarantee for arbitrary custom paths.
 
-## 隐私与范围
+This project targets public landmarks and scene comparison. It does not identify people, recover blurred text, or infer a private person's current whereabouts.
 
-- 所有调查、原图副本、裁切、报告与浏览器截图默认留在本地，并由 `.gitignore` 排除；发布前仍应检查 `git status`。
-- 不读取 `.env`，不需要 OpenAI、Google Maps 或 SerpApi 密钥，也不使用正常浏览器的登录配置。
-- 只有执行 `lens --upload` 才由浏览器助手发送图片；手动上传同样属于向 Google 分享图片。
-- 报告包含你附加的图片与链接，分享前自行检查。EXIF 移除不等于遮挡图像中可见的人脸、车牌或个人信息。
-- 不做人物身份识别、私人住址追踪、生成式补字或后台批量抓取；用途是公开景点与场景的可核验定位。
+## Compatibility and limitations
 
-## 开发与验证
+- Existing **0.1.0 schema-v1 cases remain readable**. Legacy assets without stored checksums produce warnings; no retroactive integrity claim is made. New files use isolated crop/evidence directories.
+- Mutate a given case from **one process at a time**; the JSON store is not a concurrent database.
+- Google interfaces and Lens session links can change or expire. Browser automation is best-effort, requires a display and interactive terminal, and is not a live-Google CI test.
+- Street View coverage varies. Dates are reviewer-entered; Google AI summaries and result rankings are clues, not verification.
+
+## Development
 
 ```bash
-python -m pip install -e '.[dev,pdf]'
+python -m pip install -e '.[dev,pdf,release]'
 python -m pytest -q
+python -m build
+python -m twine check dist/*
 ```
 
-测试涵盖元数据移除、裁切边界、结论升级条件、反例拦截、报告转义、路径限制和默认不上传。CI 在 Python 3.10/3.12/3.13 运行离线测试。浏览器助手不在 CI 访问 Google；它依赖可变的网页 UI，需要在自己的环境实际检查。
+CI checks the test matrix, builds wheel/source distributions, validates package metadata, and smoke-tests the installed wheel. Tests use synthetic images, not live Google services. See [CONTRIBUTING](CONTRIBUTING.md), the [full command reference](docs/commands.md), [agent workflow](docs/agent-workflow.md), and [public case studies](docs/case-studies.md).
 
-实现依据：[Playwright 上传文件](https://playwright.dev/python/docs/input#upload-files)。Google、Google Lens、Google Maps 等名称属于各自权利人；本项目非官方产品。代码采用 [MIT](LICENSE)，第三方照片与地图影像不受本项目许可覆盖。
+## License and credits
+
+Code and original documentation are released under the **[MIT License](LICENSE)**, © 2026 Daniel Xu. Third-party photos, fonts, map imagery, and trademarks retain their owners' rights. Google Lens and Google Maps are not affiliated with this project. Browser integration uses the documented [Playwright file-upload API](https://playwright.dev/python/docs/input#upload-files).

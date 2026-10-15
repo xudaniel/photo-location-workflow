@@ -1,20 +1,29 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "photo-location-workflow"
-version = "0.1.0"
+version = "1.0.0"
 description = "A local, evidence-first workflow for identifying photo locations"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Daniel Xu"}]
+keywords = ["geolocation", "photography", "evidence", "google-lens", "street-view"]
 dependencies = ["Pillow>=10.4,<13"]
 
 [project.optional-dependencies]
 browser = ["playwright>=1.45,<2"]
 pdf = ["reportlab>=4.2,<6"]
 dev = ["pytest>=8,<10"]
+release = ["build>=1.2,<2", "twine>=6,<7"]
+
+[project.urls]
+Homepage = "https://github.com/xudaniel/photo-location-workflow"
+Issues = "https://github.com/xudaniel/photo-location-workflow/issues"
+Changelog = "https://github.com/xudaniel/photo-location-workflow/blob/main/CHANGELOG.md"
 
 [project.scripts]
 photo-locate = "photo_location_workflow.cli:main"
