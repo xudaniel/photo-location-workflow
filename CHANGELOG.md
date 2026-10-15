@@ -1,5 +1,15 @@
 # Changelog / 更新记录
 
+## 1.2.0 — 2026-10-16
+
+- Full-width paired image workspace: synchronized zoom, optional relative dragging, mouse or keyboard region selection, and numbered click-to-focus correspondences. / 双图工作区支持同步缩放、相对拖动、鼠标或键盘框选与编号定位。
+- `annotate` and `unannotate` CLI/API operations, strict per-image pixel bounds, stable numbers, removal history and conclusion invalidation. / 新增标注命令与 API，校验像素边界、保留移除历史，并要求重新审阅结论。
+- HTML/PDF include numbered overviews, paired detail crops, pixel coordinates and annotation removal history. / 报告附编号总览、局部对照、坐标和历史。
+- Offline demo now uses differently framed images and two saved corresponding details. / 离线演示采用不同取景范围的图片和两组预置标注。
+- Additional regression coverage for invalid regions, unchanged original assets, persistence, API/CLI operations and annotated reports. / 新增边界校验、原文件不变、保存恢复、API／CLI 和报告测试。
+
+Schema remains at 1. Annotation fields are optional, so old records remain readable. No new model or browser dependency is required. / 保持 schema-v1，标注字段可选，兼容旧记录，无需新增模型或浏览器依赖。
+
 ## 1.1.0 — 2026-10-15
 
 ### Added / 新增

@@ -99,3 +99,21 @@ def test_invalid_inputs_and_asset_access(workbench, image_data):
     ]:
         with pytest.raises(HTTPError):
             request(case + route, body)
+
+
+def test_paired_regions_round_trip_through_http(workbench, image_data):
+    request, _ = workbench
+    state = request('/api/cases', {'image': image_data})
+    case = '/api/cases/' + state['id']
+    request(case + '/candidate', {'name': 'Synthetic', 'address': 'None', 'url': 'https://example.org/'})
+    request(case + '/evidence', {'candidate': 'c1', 'kind': 'reference', 'url': 'https://example.org/', 'verdict': 'match', 'notes': 'Synthetic', 'image': image_data})
+    assert b'ComparisonWorkbench' in request('/comparison.js')
+    state = request(case + '/annotate', {'evidence': 'e1', 'label': 'Window', 'source_box': [10, 10, 20, 20], 'reference_box': [30, 20, 40, 40]})
+    assert state['integrity']['ok']
+    assert request(case)['data']['evidence'][0]['annotations'][0]['label'] == 'Window'
+    assert b'id="e1-a1"' in request(case + '/report?format=html')
+    with pytest.raises(HTTPError):
+        request(case + '/annotate', {'evidence': 'e1', 'label': 'Invalid', 'source_box': [0, 0, 1000, 1000], 'reference_box': [0, 0, 1, 1]})
+    state = request(case + '/unannotate', {'evidence': 'e1', 'annotation': 'a1', 'reason': 'Wrong detail'})
+    assert not state['data']['evidence'][0]['annotations']
+    assert state['data']['evidence'][0]['annotation_history'][0]['reason'] == 'Wrong detail'

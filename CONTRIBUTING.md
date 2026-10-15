@@ -16,7 +16,7 @@ PDF tests need an embeddable CJK font. Ubuntu/Debian: `sudo apt-get install font
 
 CI runs Ubuntu Python 3.10/3.12/3.13 and macOS/Windows Python 3.12. HTTP tests cover local session authorization, imports, crops, candidates, evidence, review history and exports. / CI 覆盖三系统，本地 API 测试覆盖完整记录流程。
 
-For UI changes, test the real browser flow: choose/drop synthetic image → draw/save crop → candidate → evidence with reference image → review → conclude → download HTML/PDF → reopen case. Check Chinese/English and a narrow viewport. HTTP tests cannot verify pointer coordinates or visual layout. / 界面改动需实际完成浏览器流程、切换语言并检查窄屏；HTTP 测试不能代替框选与视觉检查。
+For UI changes, test the real browser flow: choose/drop synthetic image → draw/save crop → candidate → evidence with reference image → draw both regions → save/reopen/focus paired details → review → conclude → download HTML/PDF → reopen case. Check Chinese/English and a narrow viewport. HTTP tests cannot verify pointer coordinates or visual layout. / 界面改动需实际完成浏览器流程、切换语言并检查窄屏；HTTP 测试不能代替框选与视觉检查。
 
 Update dependencies deliberately with `uv lock --upgrade`, inspect the diff, then rerun CI. Normal development uses `--locked`. / 更新依赖后检查锁文件变化并重跑 CI，日常使用锁定模式。
 

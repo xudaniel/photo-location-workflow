@@ -38,6 +38,7 @@ flowchart LR
 | Review history | Revises a verdict with a mandatory explanation while retaining the previous judgment. |
 | Integrity checks | Detects missing or changed assets, unsafe paths, and broken candidate references. |
 | Confidence requirements | Requires documented address and visual evidence before accepting stronger conclusions. |
+| Paired detail comparison | Synchronized zoom and relative dragging, independently drawn corresponding regions, numbered labels and click-to-focus. |
 | Comparison reports | Builds self-contained HTML and CJK-capable PDFs with source links, paired images, and review history. |
 
 ## Local workbench
@@ -45,6 +46,20 @@ flowchart LR
 ![Local web workbench with a fictional building](docs/assets/workbench-preview.jpg)
 
 After installing, run `photo-locate ui`. Click **Try offline demo** to explore without uploading a photo or setting up a key.
+
+## Check corresponding details
+
+![Paired detail workspace with numbered regions in a fictional offline case](docs/assets/comparison-preview.jpg)
+
+Attach a reference image to evidence, then click **Compare details**:
+
+- Zoom both images with buttons, the slider or Ctrl/⌘ + wheel. **Sync dragging** moves both by the same proportion of their respective image dimensions. Normal wheel scrolling moves the page.
+- Choose **Draw regions**, mark the corresponding feature in each image, describe it and save. Keyboard users can enter both `X,Y,W,H` pixel regions directly.
+- Click a saved number to focus and enlarge the two corresponding regions. Switch evidence or candidates to inspect other references.
+- HTML/PDF exports include numbered overview images, paired detail crops and original pixel coordinates. HTML number links jump to each detail.
+- Removing a mistaken region retains its coordinates and reason in history; its number is never reused. Adding/removing a region resets the conclusion to `candidate` for renewed review.
+
+Correspondences are supplied by the reviewer. The program does not automatically decide whether two features match. Regions live in `case.json`; source/reference files remain unchanged. Each attached evidence image supports up to 100 paired regions. Existing cases need no migration.
 
 ## Report preview
 
@@ -54,12 +69,12 @@ The paired-image view below is generated from the offline synthetic demo, not a 
 
 ## Quick start
 
-### Install v1.1.0 from source
+### Install v1.2.0 from source
 
 Requires **Python 3.10+**. CI covers Ubuntu with Python 3.10, 3.12, and 3.13, plus macOS 15 and Windows 2025 with Python 3.12.
 
 ```bash
-git clone --branch v1.1.0 https://github.com/xudaniel/photo-location-workflow.git
+git clone --branch v1.2.0 https://github.com/xudaniel/photo-location-workflow.git
 cd photo-location-workflow
 python3 -m venv .venv
 source .venv/bin/activate
@@ -69,7 +84,7 @@ python -m pip install -e '.[pdf]'
 
 On Windows PowerShell, use `python -m venv .venv` and `.venv\Scripts\Activate.ps1`. For HTML only, install with `python -m pip install -e .`.
 
-Alternatively, download the wheel from [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) and run `python -m pip install /path/to/photo_location_workflow-1.1.0-py3-none-any.whl`. This project is distributed on GitHub; a PyPI publication is not required for these installation methods.
+Alternatively, download the wheel from [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) and run `python -m pip install /path/to/photo_location_workflow-1.2.0-py3-none-any.whl`. This project is distributed on GitHub; a PyPI publication is not required for these installation methods.
 
 ### Open the local workbench
 

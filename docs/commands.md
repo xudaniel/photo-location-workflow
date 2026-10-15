@@ -96,6 +96,24 @@ photo-locate review cases/trip --evidence e2 --verdict match \
 
 Changes the current verdict while preserving the original observation, original verdict, and every previous review. Requires a reason and resets the conclusion. Reports expose the review trail. / 修订当前判断，保留原始观察、最初判断和每次复审；理由必填，结论退回候选，报告显示历史。
 
+## `annotate` / 对应细节标注
+
+```bash
+photo-locate annotate cases/trip --evidence e1 --label 'Three windows / 三扇窗' \
+  --source-box 214,264,297,63 --reference-box 182,294,476,101
+```
+
+Both boxes are `x,y,width,height` in the respective metadata-free images' original pixels, with integer coordinates entirely inside each image. Evidence must have an attached reference image; up to 100 pairs are accepted per evidence. A number is assigned automatically and the conclusion resets to `candidate`. The UI also supports drawing both regions. / 两侧坐标分别基于各自图片；自动编号并将结论恢复为候选。证据须有附图，每条最多 100 组。
+
+## `unannotate` / 移除标注
+
+```bash
+photo-locate unannotate cases/trip --evidence e1 --annotation a1 \
+  --reason 'Selected the wrong window / 框错了窗户'
+```
+
+Retains the removed region, timestamp and reason in `annotation_history`. Removed numbers are not reused, and the conclusion must be reviewed again. / 保留旧坐标、时间和理由，不复用编号，需重新审阅结论。
+
 ## `check`
 
 ```bash

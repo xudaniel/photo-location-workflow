@@ -5,6 +5,7 @@ import tempfile
 
 from PIL import Image, ImageDraw
 
+from .annotations import add_annotation
 from .core import add_evidence, candidate, crop, init_case, load, save
 from .report import render_html
 
@@ -25,12 +26,16 @@ def create_demo(case):
         draw.rectangle((260, 380, 440, 510), fill='#c2a27a')
         draw.text((24, 20), 'SYNTHETIC DEMO / NOT A REAL LOCATION', fill='#162b23')
         im.save(photo)
+        reference = Path(folder) / 'reference.png'
+        im.crop((100, 80, 650, 550)).resize((880, 752), Image.Resampling.NEAREST).save(reference)
         init_case(photo, case)
         crop(case, (120, 100, 460, 420), 'facade', 2)
         candidate(case, 'Synthetic building / 虚构建筑', 'No real address / 无真实地址', 'https://example.org/')
         add_evidence(case, 'c1', 'reference', 'https://example.org/', 'match',
-                     'Synthetic illustration only. No official address or Street View verification has occurred.', photo,
+                     'Synthetic illustration only. No official address or Street View verification has occurred.', reference,
                      provider='Generated offline / 离线绘制')
+        add_annotation(case, 'e1', 'Three windows / 三扇窗', [214, 264, 297, 63], [182, 294, 476, 101])
+        add_annotation(case, 'e1', 'Two roof lights / 两盏屋顶灯', [444, 230, 52, 20], [550, 240, 84, 32])
         data = load(case)
         data['title'] = 'Offline demo / 离线演示'
         save(case, data)

@@ -1,4 +1,5 @@
-"use strict";
+import { ComparisonWorkbench } from "/comparison.js";
+("use strict");
 const translations = {
   en: {
     investigations: "YOUR INVESTIGATIONS",
@@ -357,7 +358,7 @@ async function render() {
     ? evidence
         .map(
           (e) =>
-            `<article class="evidence-item"><div class="evidence-meta"><span class="pill ${escapeHtml(e.verdict)}">${escapeHtml(t(e.verdict))}</span><span>${escapeHtml(t(e.kind))}</span><span>${escapeHtml(e.captured || "")}</span></div><p>${escapeHtml(e.notes)}</p>${e.provider ? `<small class="muted">${escapeHtml(e.provider)}</small><br>` : ""}<a href="${safeUrl(e.url)}" target="_blank" rel="noreferrer">${escapeHtml(t("source"))}</a>${e.asset ? `<div class="evidence-compare"><figure><img data-asset="${escapeHtml(data.source.asset)}" alt="${escapeHtml(t("sourceImage"))}"><figcaption>${escapeHtml(t("sourceImage"))}</figcaption></figure><figure><img data-asset="${escapeHtml(e.asset)}" alt="${escapeHtml(t("referencePhoto"))}"><figcaption>${escapeHtml(t("referencePhoto"))}</figcaption></figure></div>` : ""}<details><summary>${escapeHtml(t("review"))}</summary><form class="review-form" data-evidence="${escapeHtml(e.id)}"><select name="verdict">${["match", "unclear", "contradiction"].map((v) => `<option value="${v}" ${v === e.verdict ? "selected" : ""}>${escapeHtml(t(v))}</option>`).join("")}</select><label>${escapeHtml(t("reason"))}<textarea name="reason" rows="2" required></textarea></label><button type="submit" class="secondary">${escapeHtml(t("saveReview"))}</button></form>${e.reviews?.length ? `<div class="review-history">${escapeHtml(t("previousReviews"))}:<br>${e.reviews.map((r) => `${escapeHtml(t(r.from))} → ${escapeHtml(t(r.to))}: ${escapeHtml(r.reason)}`).join("<br>")}</div>` : ""}</details></article>`,
+            `<article class="evidence-item"><div class="evidence-meta"><span class="pill ${escapeHtml(e.verdict)}">${escapeHtml(t(e.verdict))}</span><span>${escapeHtml(t(e.kind))}</span><span>${escapeHtml(e.captured || "")}</span></div><p>${escapeHtml(e.notes)}</p>${e.provider ? `<small class="muted">${escapeHtml(e.provider)}</small><br>` : ""}<a href="${safeUrl(e.url)}" target="_blank" rel="noreferrer">${escapeHtml(t("source"))}</a>${e.asset ? `<button type="button" class="secondary open-comparison" data-open-comparison="${escapeHtml(e.id)}">${language === "zh" ? "对照细节" : "Compare details"} · ${(e.annotations || []).length}</button><div class="evidence-compare"><figure><img data-asset="${escapeHtml(data.source.asset)}" alt="${escapeHtml(t("sourceImage"))}"><figcaption>${escapeHtml(t("sourceImage"))}</figcaption></figure><figure><img data-asset="${escapeHtml(e.asset)}" alt="${escapeHtml(t("referencePhoto"))}"><figcaption>${escapeHtml(t("referencePhoto"))}</figcaption></figure></div>` : ""}<details><summary>${escapeHtml(t("review"))}</summary><form class="review-form" data-evidence="${escapeHtml(e.id)}"><select name="verdict">${["match", "unclear", "contradiction"].map((v) => `<option value="${v}" ${v === e.verdict ? "selected" : ""}>${escapeHtml(t(v))}</option>`).join("")}</select><label>${escapeHtml(t("reason"))}<textarea name="reason" rows="2" required></textarea></label><button type="submit" class="secondary">${escapeHtml(t("saveReview"))}</button></form>${e.reviews?.length ? `<div class="review-history">${escapeHtml(t("previousReviews"))}:<br>${e.reviews.map((r) => `${escapeHtml(t(r.from))} → ${escapeHtml(t(r.to))}: ${escapeHtml(r.reason)}`).join("<br>")}</div>` : ""}</details></article>`,
         )
         .join("")
     : `<p class="empty">${escapeHtml(t("noEvidence"))}</p>`;
@@ -373,7 +374,11 @@ async function render() {
     : "candidate";
   const note = data.conclusion.note || "";
   $("#conclusion-form textarea").value =
-    /^(Awaiting|New evidence|Evidence reviewed)/.test(note) ? "" : note;
+    /^(Awaiting|New evidence|Evidence reviewed|Comparison annotations)/.test(
+      note,
+    )
+      ? ""
+      : note;
   $("#integrity").textContent = active.integrity.ok
     ? t("integrityOk")
     : t("integrityFailed");
@@ -419,6 +424,7 @@ async function render() {
   canvas.height = image.naturalHeight;
   draw();
   translate();
+  await comparison.update(active, chosen);
 }
 function draw() {
   if (!sceneImage) return;
@@ -638,6 +644,26 @@ $("#demo").addEventListener("click", () =>
     notify(t("demoReady"));
   }),
 );
+const comparison = new ComparisonWorkbench({
+  container: $("#comparison-workspace"),
+  imageUrl,
+  notify,
+  onSave: (body, done) =>
+    run(async () => {
+      await mutate("annotate", body);
+      done();
+      notify(t("saved"));
+    }),
+  onRemove: (body) =>
+    run(async () => {
+      await mutate("unannotate", body);
+      notify(t("saved"));
+    }),
+});
+$("#evidence-list").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-open-comparison]");
+  if (button) comparison.open(button.dataset.openComparison);
+});
 translate();
 run(async () => {
   const cases = await listCases();

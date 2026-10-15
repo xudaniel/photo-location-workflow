@@ -233,6 +233,11 @@ def check_case(case):
     for e in data['evidence']:
         if e['candidate_id'] not in ids:
             errors.append(f"Unknown candidate in {e['id']}.")
+        try:
+            from .annotations import validate_annotations
+            validate_annotations(case, data, e)
+        except (ValueError, OSError, KeyError, TypeError, AttributeError) as exc:
+            errors.append(f"Invalid annotations in {e['id']}: {exc}")
     con = data['conclusion']
     if con.get('candidate_id') is not None and con['candidate_id'] not in ids:
         errors.append('Unknown conclusion candidate.')

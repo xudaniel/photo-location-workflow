@@ -16,6 +16,7 @@ import uuid
 import webbrowser
 
 from . import __version__
+from .annotations import add_annotation, remove_annotation
 from .core import add_evidence, asset_path, candidate, check_case, conclude, crop, init_case, load, review_evidence, save
 from .demo import create_demo
 from .report import render_html, render_pdf
@@ -75,12 +76,12 @@ def create_server(cases_root, port=0):
             if not self._host_ok():
                 return self._send({'error': 'Unexpected host.'}, status=403)
             parsed = urlsplit(self.path)
-            if parsed.path in ('/', '/app.js', '/style.css'):
-                name = {'/': 'index.html', '/app.js': 'app.js', '/style.css': 'style.css'}[parsed.path]
+            if parsed.path in ('/', '/app.js', '/comparison.js', '/style.css'):
+                name = {'/': 'index.html', '/app.js': 'app.js', '/comparison.js': 'comparison.js', '/style.css': 'style.css'}[parsed.path]
                 value = static.joinpath(name).read_bytes()
                 if name == 'index.html':
                     value = value.replace(b'__LOCAL_TOKEN__', token.encode())
-                return self._send(value, {'index.html': 'text/html', 'app.js': 'text/javascript', 'style.css': 'text/css'}[name])
+                return self._send(value, {'index.html': 'text/html', 'app.js': 'text/javascript', 'comparison.js': 'text/javascript', 'style.css': 'text/css'}[name])
             if not self._authorized():
                 return self._send({'error': 'Local session authorization required.'}, status=403)
             try:
@@ -157,7 +158,7 @@ def create_server(cases_root, port=0):
                             data['title'] = str(body.get('title', 'Untitled photo'))[:100]
                             save(path, data)
                         return self._send(self._state(path), status=201)
-                    match = re.fullmatch(r'/api/cases/([^/]+)/(crop|candidate|evidence|review|conclude)', route)
+                    match = re.fullmatch(r'/api/cases/([^/]+)/(crop|candidate|evidence|review|conclude|annotate|unannotate)', route)
                     if not match:
                         return self._send({'error': 'Not found.'}, status=404)
                     path = self._case(unquote(match[1]))
@@ -173,6 +174,10 @@ def create_server(cases_root, port=0):
                         add_evidence(path, body['candidate'], body['kind'], body['url'], body['verdict'], body['notes'], photo, body.get('captured') or None, body.get('provider'))
                     elif match[2] == 'review':
                         review_evidence(path, body['evidence'], body['verdict'], body['reason'])
+                    elif match[2] == 'annotate':
+                        add_annotation(path, body['evidence'], body['label'], body['source_box'], body['reference_box'])
+                    elif match[2] == 'unannotate':
+                        remove_annotation(path, body['evidence'], body['annotation'], body['reason'])
                     else:
                         conclude(path, body['candidate'], body['level'], body['note'])
                     return self._send(self._state(path))

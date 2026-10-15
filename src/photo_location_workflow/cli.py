@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .annotations import add_annotation, remove_annotation
 from .core import KINDS, LEVELS, VERDICTS, add_evidence, candidate, check_case, conclude, crop, init_case, load, review_evidence, selected_asset
 from .lens import LENS_URL, run_lens
 from .report import render_html, render_pdf
@@ -61,6 +62,17 @@ def parser():
     review.add_argument('--evidence', required=True)
     review.add_argument('--verdict', choices=VERDICTS, required=True)
     review.add_argument('--reason', required=True)
+    mark = sub.add_parser('annotate', help='Number corresponding pixel regions in source and reference images.')
+    mark.add_argument('case', type=Path)
+    mark.add_argument('--evidence', required=True)
+    mark.add_argument('--label', required=True)
+    mark.add_argument('--source-box', type=box, required=True)
+    mark.add_argument('--reference-box', type=box, required=True)
+    unmark = sub.add_parser('unannotate', help='Remove a paired region while retaining its history.')
+    unmark.add_argument('case', type=Path)
+    unmark.add_argument('--evidence', required=True)
+    unmark.add_argument('--annotation', required=True)
+    unmark.add_argument('--reason', required=True)
     check = sub.add_parser('check', help='Check local asset paths, checksums and evidence references.')
     check.add_argument('case', type=Path)
     done = sub.add_parser("conclude", help="Assign a human-reviewed confidence; evidence requirements are enforced.")
@@ -105,6 +117,10 @@ def main(argv=None):
             result = add_evidence(args.case, args.candidate, args.kind, args.url, args.verdict, args.notes, args.image, args.captured, args.provider)
         elif args.command == 'review':
             result = review_evidence(args.case, args.evidence, args.verdict, args.reason)
+        elif args.command == 'annotate':
+            result = add_annotation(args.case, args.evidence, args.label, args.source_box, args.reference_box)
+        elif args.command == 'unannotate':
+            result = remove_annotation(args.case, args.evidence, args.annotation, args.reason)
         elif args.command == 'check':
             result = check_case(args.case)
         elif args.command == "conclude":

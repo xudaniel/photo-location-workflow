@@ -52,4 +52,4 @@ jobs:
           .wheel-test/bin/photo-locate --version
           .wheel-test/bin/photo-locate demo --case cases/ci-demo
           .wheel-test/bin/photo-locate check cases/ci-demo
-          .wheel-test/bin/python -c "from importlib.resources import files; from photo_location_workflow.ui import create_server; assert files('photo_location_workflow').joinpath('static/app.js').is_file(); server, _ = create_server('cases'); server.server_close()"
+          .wheel-test/bin/python -c "from importlib.resources import files; from photo_location_workflow.ui import create_server; assert all(files('photo_location_workflow').joinpath('static', name).is_file() for name in ('app.js', 'comparison.js', 'style.css', 'index.html')); server, _ = create_server('cases'); server.server_close()"

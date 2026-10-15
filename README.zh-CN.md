@@ -36,6 +36,7 @@ flowchart LR
 | 保留复审历史 | 修订判断时必须说明理由，旧判断仍保留。 |
 | 完整性检查 | 发现文件缺失、内容变化、越界路径和无效候选引用。 |
 | 结论等级约束 | 记录官网地址和视觉证据后，才允许采用较高把握等级。 |
+| 双图细节对照 | 同步缩放、按相对比例拖动，两侧分别框选对应区域，保存编号并点击定位。 |
 | 双图对比报告 | 导出可离线查看的 HTML 和支持中文的 PDF，附来源、并排图片及复审记录。 |
 
 ## 本地工作台
@@ -43,6 +44,20 @@ flowchart LR
 ![本地网页工作台，使用虚构建筑演示](docs/assets/workbench-preview.jpg)
 
 安装后运行 `photo-locate ui`，浏览器会打开本机工作台。点击“体验离线演示”即可试用，无需上传照片或申请密钥。
+
+## 对应细节，逐处核对
+
+![双图细节对照与编号标注，采用离线虚构案例](docs/assets/comparison-preview.jpg)
+
+为证据附上参考图片后，点击“对照细节”即可打开双图工作区：
+
+- 使用缩放按钮、滑条或 Ctrl/⌘ + 滚轮同步缩放；开启“同步拖动”后，两侧按各自图片的相对比例移动。普通滚轮用于滚动页面。
+- 切到“框选细节”，在原图和参考图分别框选同一处特征，填写说明并保存。也可直接输入两侧 `X、Y、W、H` 像素坐标。
+- 点击编号会同时定位并放大两侧对应区域。切换候选或证据，可以分别检查不同参考影像。
+- HTML／PDF 同时输出编号总览、每组局部对照及原始坐标；HTML 编号链接可跳转到对应细节。
+- 移除误标会保留原坐标和操作历史，之后不会复用该编号。新增或移除标注后，结论恢复为候选，需重新审阅。
+
+框选由审阅者建立对应关系，程序不自动判断两处特征是否相同。标注保存在 `case.json`，原图和参考图文件保持不变。每条附图证据最多支持 100 组标注；旧记录无需迁移。
 
 ## 报告预览
 
@@ -52,12 +67,12 @@ flowchart LR
 
 ## 快速开始
 
-### 安装 v1.1.0
+### 安装 v1.2.0
 
 需要 **Python 3.10+**。CI 覆盖 Ubuntu 的 Python 3.10、3.12、3.13，以及 macOS 15、Windows 2025 的 Python 3.12。
 
 ```bash
-git clone --branch v1.1.0 https://github.com/xudaniel/photo-location-workflow.git
+git clone --branch v1.2.0 https://github.com/xudaniel/photo-location-workflow.git
 cd photo-location-workflow
 python3 -m venv .venv
 source .venv/bin/activate
@@ -67,7 +82,7 @@ python -m pip install -e '.[pdf]'
 
 Windows PowerShell 使用 `python -m venv .venv` 和 `.venv\Scripts\Activate.ps1`。只需要 HTML 时，执行 `python -m pip install -e .` 即可。
 
-也可以从 [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) 下载 wheel，执行 `python -m pip install /path/to/photo_location_workflow-1.1.0-py3-none-any.whl`。上述方式直接从 GitHub 安装，不依赖 PyPI 发布。
+也可以从 [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) 下载 wheel，执行 `python -m pip install /path/to/photo_location_workflow-1.2.0-py3-none-any.whl`。上述方式直接从 GitHub 安装，不依赖 PyPI 发布。
 
 ### 打开本地界面
 

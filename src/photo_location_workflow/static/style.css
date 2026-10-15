@@ -777,3 +777,234 @@ footer {
     flex-wrap: wrap;
   }
 }
+
+/* Full-width paired detail workspace. */
+#comparison-workspace {
+  scroll-margin-top: 20px;
+  border-color: #b3c7a7;
+  background: #fdfef9;
+}
+#comparison-workspace .card-heading {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.comparison-evidence-label {
+  width: min(100%, 420px);
+  margin: 0;
+}
+.comparison-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 20px 0 16px;
+}
+.mode-buttons,
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.comparison-toolbar button {
+  font-size: 12px;
+  padding: 8px 12px;
+}
+.sync-control {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+  font-size: 12px;
+}
+.sync-control input {
+  width: 16px;
+  min-height: 16px;
+  accent-color: #267252;
+}
+.sync-control span {
+  margin: 0;
+}
+.zoom-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.zoom-controls label span {
+  margin: 0;
+}
+.comparison-zoom {
+  width: 100px;
+  padding: 0;
+  min-height: 26px;
+  accent-color: #267252;
+}
+.zoom-value {
+  font-size: 11px;
+  min-width: 28px;
+}
+.fit-views {
+  margin-left: auto;
+}
+.comparison-viewports {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.comparison-viewports figure {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid #d6dfcf;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #e4eadf;
+}
+.comparison-viewports figcaption {
+  font-size: 11px;
+  font-weight: 650;
+  padding: 9px 13px;
+  background: #edf2e6;
+  letter-spacing: 0.03em;
+}
+.comparison-canvas {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: 340px;
+  touch-action: none;
+}
+.annotation-form {
+  margin-top: 18px;
+}
+.annotation-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.annotation-fields fieldset {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  border: 1px solid #dce3d4;
+  border-radius: 9px;
+  padding: 9px 12px;
+}
+.annotation-fields legend {
+  font-size: 11px;
+  color: #667e5c;
+  padding: 0 5px;
+}
+.annotation-fields label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  flex: 1;
+  font-size: 10px;
+  min-width: 65px;
+}
+.annotation-fields input {
+  width: 100%;
+  min-width: 42px;
+  min-height: 32px;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+.annotation-save {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.annotation-save label {
+  flex: 1;
+  min-width: 180px;
+  margin: 0;
+}
+.annotation-save button {
+  font-size: 12px;
+  height: 42px;
+}
+.annotation-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 18px;
+}
+.annotation-row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+  min-width: 0;
+}
+.region-focus {
+  flex: 1;
+  justify-content: flex-start;
+  text-align: left;
+  font-size: 12px;
+  min-width: 0;
+}
+.region-focus[aria-pressed="true"] {
+  border-color: #518842;
+  background: #ebf2df;
+}
+.region-focus > span:last-child {
+  overflow-wrap: anywhere;
+}
+.region-number {
+  display: grid;
+  place-items: center;
+  background: #173e32;
+  color: #f8da87;
+  border-radius: 6px;
+  min-width: 24px;
+  height: 24px;
+  font-size: 12px;
+}
+.region-remove {
+  font-size: 10px;
+  padding: 6px 8px;
+}
+.open-comparison {
+  margin-top: 9px;
+  font-size: 10px;
+  padding: 7px 10px;
+}
+@media (max-width: 900px) {
+  .comparison-viewports {
+    gap: 9px;
+  }
+  .comparison-canvas {
+    height: 270px;
+  }
+  .annotation-fields {
+    gap: 9px;
+  }
+  .fit-views {
+    margin-left: 0;
+  }
+}
+@media (max-width: 600px) {
+  .comparison-viewports,
+  .annotation-fields,
+  .annotation-list {
+    grid-template-columns: 1fr;
+  }
+  .comparison-canvas {
+    height: 270px;
+  }
+  .comparison-toolbar {
+    gap: 10px;
+  }
+  .zoom-controls {
+    flex-wrap: wrap;
+  }
+  .annotation-save button {
+    flex: 1;
+  }
+  .annotation-save label {
+    flex-basis: 100%;
+  }
+}
