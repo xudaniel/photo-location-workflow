@@ -12,7 +12,7 @@
 
 **Photo Location Workflow** 把照片定位研究整理成一条可复核的流程：整图反向搜索、独特局部裁切、官网地址核对、街景对照，以及证据报告。
 
-本地中英文网页工作台和命令行共用图片准备、记录、文件完整性检查与报告。**视觉判断由你或连接工具的 AI 助手完成**；程序本身没有地理识别模型，不会把相似搜索结果直接当成答案，也不需要付费模型 API 密钥。
+本地中英文网页工作台和命令行共用图片准备、记录、文件完整性检查与报告。**最终判断由审阅者完成**。可选研究助手通过 OpenAI 分析图片、生成搜索词并联网整理假设；手动调查和离线演示无需模型密钥。
 
 ```mermaid
 flowchart LR
@@ -67,12 +67,12 @@ flowchart LR
 
 ## 快速开始
 
-### 安装 v1.2.0
+### 安装 v1.3.0
 
 需要 **Python 3.10+**。CI 覆盖 Ubuntu 的 Python 3.10、3.12、3.13，以及 macOS 15、Windows 2025 的 Python 3.12。
 
 ```bash
-git clone --branch v1.2.0 https://github.com/xudaniel/photo-location-workflow.git
+git clone --branch v1.3.0 https://github.com/xudaniel/photo-location-workflow.git
 cd photo-location-workflow
 python3 -m venv .venv
 source .venv/bin/activate
@@ -82,7 +82,7 @@ python -m pip install -e '.[pdf]'
 
 Windows PowerShell 使用 `python -m venv .venv` 和 `.venv\Scripts\Activate.ps1`。只需要 HTML 时，执行 `python -m pip install -e .` 即可。
 
-也可以从 [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) 下载 wheel，执行 `python -m pip install /path/to/photo_location_workflow-1.2.0-py3-none-any.whl`。上述方式直接从 GitHub 安装，不依赖 PyPI 发布。
+也可以从 [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) 下载 wheel，执行 `python -m pip install /path/to/photo_location_workflow-1.3.0-py3-none-any.whl`。上述方式直接从 GitHub 安装，不依赖 PyPI 发布。
 
 ### 打开本地界面
 
@@ -108,6 +108,24 @@ photo-locate report cases/demo-v1
 ```
 
 用浏览器打开 `cases/demo-v1/report.html`。演示采用程序绘制的**虚构建筑**，全程离线，结论保留为候选。再次运行时选择新的空目录。wheel 安装也包含演示和完整网页。仓库不附私人原照片或第三方地图影像。
+
+## 可选半自动研究助手
+
+```bash
+photo-locate ui --env-file /path/to/your/ignored.env.local
+```
+
+也可在启动服务器的环境中配置 `OPENAI_API_KEY`。可选 `OPENAI_MODEL` 更换模型，默认 `gpt-5.6-terra`。模型需支持图片输入、Structured Outputs 和 Responses API 的 `web_search`。密钥只在本地服务端读取，不写入浏览器、调查记录或报告。
+
+1. 写下已核对的线索，选择原图和原始裁切（最多四张）。笔记停笔后自动保存，也可点击“保存进度”。
+2. 确认发送范围后点击“分析照片并检索”。选定图片先缩至最长边 1600 像素，重新编码为 JPEG，再与该次笔记发送给 OpenAI；第二步将分析结果用于文字联网检索。
+3. 查看观察、搜索词、待核对问题、带来源的地点假设。只有出现在实际搜索返回来源中的链接可附到建议候选；来源本身仍须人工核对。
+4. 点击“加入候选记录”后才生成普通候选。助手不会自动新增“官网吻合”或街景证据，也不会提高结论等级。
+5. 勾选已处理问题，补充笔记。分析完成后即保存检查点，检索失败可继续而不重做分析；服务器关闭后，未完成任务会标记为中断，可手动继续。
+
+每轮最多两次模型请求、两次搜索工具调用。继续操作只补做未保存的步骤，使用该轮原有图片和笔记；补充新线索后可新建一轮。图片变化会阻止旧轮继续。请求超时不代表远端没有计费；程序不会自动重试。API 额度不足、速率限制、鉴权错误会明确显示，并保留已保存结果。
+
+`case.json` 的可选 `research` 字段保存笔记、问题完成状态、历史轮次、输入图片校验和、模型和用量。研究建议留在工作台与本地记录中；正式证据报告仅纳入已建立的候选与人工审阅记录。联网搜索是文字检索，Google Lens 反向搜图与街景仍需另行实际操作。启用助手会产生 OpenAI API 费用；余额不足时，手动调查功能仍可使用。
 
 ## 一次完整调查
 
@@ -228,7 +246,7 @@ cases/trip/
 └── report.pdf
 ```
 
-代码不读取 `.env`，不需要付费模型密钥，也不使用日常浏览器登录配置。调查和截图留在本地，除非你上传或分享。移除元数据**不会**遮挡画面中的人脸、车牌和文字。`.gitignore` 排除常见调查／输出目录及栅格图／PDF；自定义路径仍应在提交前自行检查。
+手动工具无需付费模型密钥；仅在明确传入 `--env-file` 时读取文件中的 `OPENAI_API_KEY` 和 `OPENAI_MODEL`，也可从进程环境读取。程序不使用日常浏览器登录配置。调查和截图留在本地；主动启动研究助手时，选定图片、该轮笔记与分析结果会发送给 OpenAI，生成的搜索词用于联网检索。移除元数据**不会**遮挡画面中的人脸、车牌和文字。`.gitignore` 排除常见调查／输出目录及栅格图／PDF；自定义路径仍应在提交前自行检查。
 
 本项目面向公开景点与场景对照，不做人物身份识别、模糊文字恢复或私人实时行踪推断。
 

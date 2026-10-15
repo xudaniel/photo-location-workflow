@@ -13,11 +13,12 @@ All commands support `--help`. Most successful commands print JSON to stdout; `u
 ```bash
 photo-locate ui --cases cases --port 8765
 photo-locate ui --cases cases --port 8765 --no-open
+photo-locate ui --env-file /path/to/ignored.env.local
 ```
 
 Starts the English/Chinese workbench on `127.0.0.1` only. Imports local photos, supports pointer or coordinate cropping, candidates, evidence comparison, reviews and report downloads. `--no-open` prevents automatic browser launch. Ctrl-C stops the server. / 启动本机中英文工作台，可导入、框选、记录候选与证据、复审并导出；Ctrl-C 停止。
 
-Images stay local until you explicitly upload them to a separate search provider. PDF needs the `pdf` extra and an embeddable CJK font. / 图片保持本地，搜图另行手动上传。PDF 需要扩展及字体。
+Images stay local until you explicitly upload them or start optional OpenAI research. `--env-file` reads only OPENAI_API_KEY and OPENAI_MODEL on the server. PDF needs the `pdf` extra and an embeddable CJK font. / 图片保持本地，搜图另行手动上传。PDF 需要扩展及字体。
 
 ## `demo` / 离线演示
 

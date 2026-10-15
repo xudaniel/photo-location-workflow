@@ -1008,3 +1008,76 @@ footer {
     flex-basis: 100%;
   }
 }
+/* Optional research assistant */
+#research-workspace {
+  margin-bottom: 24px;
+  background: #fafcf5;
+}
+.research-assets {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.research-assets label,
+.research-consent,
+.research-question {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+.research-assets input,
+.research-consent input,
+.research-question input {
+  width: 17px;
+  min-height: 17px;
+  flex: 0 0 17px;
+  margin-top: 3px;
+}
+.research-consent {
+  margin-top: 18px;
+  max-width: 800px;
+}
+.research-meta {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.research-run {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.research-run > p {
+  white-space: pre-wrap;
+}
+.research-queries {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.research-queries > a {
+  background: #e7eedb;
+  border: 1px solid #d5e0c8;
+  border-radius: 9px;
+  padding: 7px 11px;
+  color: #376443;
+  text-decoration: none;
+  font-size: 12px;
+}
+.research-warning {
+  color: #986040;
+  background: #fff2df;
+  border-radius: 8px;
+  padding: 10px;
+}
+.research-results a {
+  overflow-wrap: anywhere;
+}
+.research-results .candidate-card button {
+  margin-top: 12px;
+}
+.research-results small {
+  color: var(--muted);
+}

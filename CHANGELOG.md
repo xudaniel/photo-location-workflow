@@ -1,5 +1,14 @@
 # Changelog / 更新记录
 
+## 1.3.0 — 2026-10-16
+
+- Optional OpenAI research workbench: image observations, search queries, source-linked candidate hypotheses and verification questions. / 可选 OpenAI 研究助手，整理观察、搜索词、附来源假设与核对问题。
+- Explicit input submission, bounded requests, server-only credentials, source URL filtering and manual candidate adoption. No automatic evidence or confidence upgrades. / 明确发送范围、限制调用次数、密钥留在服务端；候选须手动采纳，不自动形成核对证据。
+- Persisted notes, resolved questions, run history and analysis/search checkpoints; resume failed or interrupted work without repeating saved analysis. / 保存笔记、问题状态、历史和分步检查点，支持中断后继续。
+- Safe quota/authentication/transport errors and regression coverage for retry, integrity, duplicate jobs, source grounding and HTTP operations. / 区分额度、鉴权和连接错误，新增恢复、完整性、来源与 HTTP 测试。
+
+Schema stays at 1; research fields are optional. Manual tools and the offline demo remain usable without a key. / 保持 schema-v1，手动工具和离线演示无需密钥。
+
 ## 1.2.0 — 2026-10-16
 
 - Full-width paired image workspace: synchronized zoom, optional relative dragging, mouse or keyboard region selection, and numbered click-to-focus correspondences. / 双图工作区支持同步缩放、相对拖动、鼠标或键盘框选与编号定位。

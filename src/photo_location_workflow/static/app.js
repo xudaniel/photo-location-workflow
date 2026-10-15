@@ -1,3 +1,4 @@
+import { ResearchWorkbench } from "/research.js";
 import { ComparisonWorkbench } from "/comparison.js";
 ("use strict");
 const translations = {
@@ -16,7 +17,7 @@ const translations = {
     dropTitle: "Drop a photo here",
     dropHint: "or click to choose · JPG, PNG, WebP",
     uploadPrivacy:
-      "Files stay on this computer. Google searches open separately.",
+      "Manual tools stay local. Optional AI sends only the inputs you select.",
     stepPhoto: "Photo",
     stepDetail: "Distinctive detail",
     stepEvidence: "Evidence",
@@ -68,7 +69,7 @@ const translations = {
     exportPdf: "Download PDF",
     reviewReminder:
       "Confidence is a human judgment. PDF export needs PDF support and a suitable font.",
-    footer: "Local workspace · Images are never uploaded automatically",
+    footer: "Local workspace · Optional AI starts only when requested",
     original: "Whole photo",
     noCandidates: "Add a candidate after checking a source.",
     noEvidence: "Keep matches, uncertainty, and conflicting details here.",
@@ -106,7 +107,7 @@ const translations = {
     landingText: "准备照片、框选最有辨识度的细节，再把判断与来源保存在一起。",
     dropTitle: "将照片拖到这里",
     dropHint: "或点击选择 · JPG、PNG、WebP",
-    uploadPrivacy: "文件保留在本机。Google 搜图会另行打开。",
+    uploadPrivacy: "手动工具在本机运行；可选 AI 只发送你选定的内容。",
     stepPhoto: "准备照片",
     stepDetail: "框选细节",
     stepEvidence: "核对证据",
@@ -157,7 +158,7 @@ const translations = {
     exportPdf: "下载 PDF 报告",
     reviewReminder:
       "把握等级由人工审阅决定。PDF 导出需要安装 PDF 扩展及合适字体。",
-    footer: "本地工作区 · 不会自动向外部上传照片",
+    footer: "本地工作区 · 可选 AI 由你主动启动",
     original: "整张照片",
     noCandidates: "查看来源后，在这里记录候选地点。",
     noEvidence: "把吻合点、不确定之处和反例一起留下。",
@@ -425,6 +426,7 @@ async function render() {
   draw();
   translate();
   await comparison.update(active, chosen);
+  await research.update(active, language);
 }
 function draw() {
   if (!sceneImage) return;
@@ -644,6 +646,17 @@ $("#demo").addEventListener("click", () =>
     notify(t("demoReady"));
   }),
 );
+const research = new ResearchWorkbench({
+  container: $("#research-workspace"),
+  request,
+  notify,
+  onUpdate: (value, id) => {
+    if (active?.id === id) active.data.research = value;
+  },
+  onAdopt: async (runId, index) => {
+    await mutate("adopt", { run: runId, index });
+  },
+});
 const comparison = new ComparisonWorkbench({
   container: $("#comparison-workspace"),
   imageUrl,

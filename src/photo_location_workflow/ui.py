@@ -20,15 +20,17 @@ from .annotations import add_annotation, remove_annotation
 from .core import add_evidence, asset_path, candidate, check_case, conclude, crop, init_case, load, review_evidence, save
 from .demo import create_demo
 from .report import render_html, render_pdf
+from .research import OpenAIResearch, ResearchManager, settings
 
 MAX_BODY = 48 * 1024 * 1024
 
 
-def create_server(cases_root, port=0):
+def create_server(cases_root, port=0, research_client=None):
     root = Path(cases_root).resolve()
     root.mkdir(parents=True, exist_ok=True)
     token = secrets.token_urlsafe(32)
     lock = threading.RLock()
+    research = ResearchManager(research_client, lock)
     static = files('photo_location_workflow').joinpath('static')
 
     class Handler(BaseHTTPRequestHandler):
@@ -76,12 +78,12 @@ def create_server(cases_root, port=0):
             if not self._host_ok():
                 return self._send({'error': 'Unexpected host.'}, status=403)
             parsed = urlsplit(self.path)
-            if parsed.path in ('/', '/app.js', '/comparison.js', '/style.css'):
-                name = {'/': 'index.html', '/app.js': 'app.js', '/comparison.js': 'comparison.js', '/style.css': 'style.css'}[parsed.path]
+            if parsed.path in ('/', '/app.js', '/comparison.js', '/research.js', '/style.css'):
+                name = {'/': 'index.html', '/app.js': 'app.js', '/comparison.js': 'comparison.js', '/research.js': 'research.js', '/style.css': 'style.css'}[parsed.path]
                 value = static.joinpath(name).read_bytes()
                 if name == 'index.html':
                     value = value.replace(b'__LOCAL_TOKEN__', token.encode())
-                return self._send(value, {'index.html': 'text/html', 'app.js': 'text/javascript', 'comparison.js': 'text/javascript', 'style.css': 'text/css'}[name])
+                return self._send(value, {'index.html': 'text/html', 'app.js': 'text/javascript', 'comparison.js': 'text/javascript', 'research.js': 'text/javascript', 'style.css': 'text/css'}[name])
             if not self._authorized():
                 return self._send({'error': 'Local session authorization required.'}, status=403)
             try:
@@ -96,10 +98,14 @@ def create_server(cases_root, port=0):
                                 except (ValueError, OSError, KeyError):
                                     continue
                         return self._send({'cases': sorted(items, key=lambda c: c['updated_at'], reverse=True), 'version': __version__})
-                    match = re.fullmatch(r'/api/cases/([^/]+)(?:/(asset|report))?', parsed.path)
+                    if parsed.path == '/api/research':
+                        return self._send({'configured': research.client.configured, 'model': research.client.model})
+                    match = re.fullmatch(r'/api/cases/([^/]+)(?:/(asset|report|research))?', parsed.path)
                     if not match:
                         return self._send({'error': 'Not found.'}, status=404)
                     path = self._case(unquote(match[1]))
+                    if match[2] == 'research':
+                        return self._send(research.snapshot(path))
                     if match[2] == 'asset':
                         relative = parse_qs(parsed.query).get('path', [''])[0]
                         data = load(path)
@@ -158,11 +164,17 @@ def create_server(cases_root, port=0):
                             data['title'] = str(body.get('title', 'Untitled photo'))[:100]
                             save(path, data)
                         return self._send(self._state(path), status=201)
-                    match = re.fullmatch(r'/api/cases/([^/]+)/(crop|candidate|evidence|review|conclude|annotate|unannotate)', route)
+                    match = re.fullmatch(r'/api/cases/([^/]+)/(crop|candidate|evidence|review|conclude|annotate|unannotate|research|progress|adopt)', route)
                     if not match:
                         return self._send({'error': 'Not found.'}, status=404)
                     path = self._case(unquote(match[1]))
-                    if match[2] == 'crop':
+                    if match[2] == 'research':
+                        return self._send(research.start(path, body.get('assets'), body.get('language', 'en'), body.get('consent'), body.get('resume')), status=202)
+                    elif match[2] == 'progress':
+                        return self._send(research.progress(path, body.get('notes'), body.get('resolved')))
+                    elif match[2] == 'adopt':
+                        research.adopt(path, body.get('run'), body.get('index'))
+                    elif match[2] == 'crop':
                         box = body['box']
                         if not isinstance(box, list) or len(box) != 4 or any(type(v) is not int for v in box):
                             raise ValueError('Select a rectangular detail in the photo.')
@@ -185,11 +197,16 @@ def create_server(cases_root, port=0):
                 return self._send({'error': str(exc)}, status=400)
 
     server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
+    original_close = server.server_close
+    def close():
+        research.close()
+        original_close()
+    server.server_close = close
     return server, token
 
 
-def serve(cases_root, port=8765, open_browser=True):
-    server, _ = create_server(cases_root, port)
+def serve(cases_root, port=8765, open_browser=True, env_file=None):
+    server, _ = create_server(cases_root, port, OpenAIResearch(*settings(env_file)))
     url = f'http://127.0.0.1:{server.server_port}'
     print(f'Photo Location Workbench {__version__}: {url}\nLocal files: {Path(cases_root).resolve()}\nPress Ctrl-C to stop.')
     if open_browser:

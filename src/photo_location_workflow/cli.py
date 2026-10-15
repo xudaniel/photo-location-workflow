@@ -31,6 +31,7 @@ def parser():
     ui.add_argument("--cases", type=Path, default=Path("cases"))
     ui.add_argument("--port", type=int, default=8765)
     ui.add_argument("--no-open", action="store_true")
+    ui.add_argument("--env-file", type=Path, help="Optional local OpenAI key/model file; never copied into a case.")
     demo = sub.add_parser("demo", help="Create an offline demonstration with a synthetic image.")
     demo.add_argument("--case", type=Path, default=Path("cases/demo"))
     cut = sub.add_parser("crop", help="Crop distinctive details without inventing pixels.")
@@ -97,7 +98,7 @@ def main(argv=None):
             result = init_case(args.photo, args.case)
         elif args.command == "ui":
             from .ui import serve
-            serve(args.cases, args.port, not args.no_open)
+            serve(args.cases, args.port, not args.no_open, args.env_file)
             return 0
         elif args.command == "demo":
             from .demo import create_demo

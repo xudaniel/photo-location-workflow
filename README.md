@@ -14,7 +14,7 @@
 
 **Photo Location Workflow** turns photo-location research into a repeatable, reviewable process: reverse-image search, distinctive-detail crops, authoritative address checks, Street View comparisons, and an evidence report.
 
-The local bilingual web workbench and CLI share preparation, records, integrity checks, and reports. **You or your AI assistant make the visual judgments.** It does not run a geolocation model, automatically identify landmarks, or treat a search suggestion as a verified answer. No model API key is required.
+The local bilingual web workbench and CLI share preparation, records, integrity checks, and reports. **The reviewer makes the final judgment.** An optional OpenAI research assistant analyzes images, prepares search queries and collects web-backed hypotheses. Manual investigations and the offline demo need no model key.
 
 ```mermaid
 flowchart LR
@@ -69,12 +69,12 @@ The paired-image view below is generated from the offline synthetic demo, not a 
 
 ## Quick start
 
-### Install v1.2.0 from source
+### Install v1.3.0 from source
 
 Requires **Python 3.10+**. CI covers Ubuntu with Python 3.10, 3.12, and 3.13, plus macOS 15 and Windows 2025 with Python 3.12.
 
 ```bash
-git clone --branch v1.2.0 https://github.com/xudaniel/photo-location-workflow.git
+git clone --branch v1.3.0 https://github.com/xudaniel/photo-location-workflow.git
 cd photo-location-workflow
 python3 -m venv .venv
 source .venv/bin/activate
@@ -84,7 +84,7 @@ python -m pip install -e '.[pdf]'
 
 On Windows PowerShell, use `python -m venv .venv` and `.venv\Scripts\Activate.ps1`. For HTML only, install with `python -m pip install -e .`.
 
-Alternatively, download the wheel from [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) and run `python -m pip install /path/to/photo_location_workflow-1.2.0-py3-none-any.whl`. This project is distributed on GitHub; a PyPI publication is not required for these installation methods.
+Alternatively, download the wheel from [Releases](https://github.com/xudaniel/photo-location-workflow/releases/latest) and run `python -m pip install /path/to/photo_location_workflow-1.3.0-py3-none-any.whl`. This project is distributed on GitHub; a PyPI publication is not required for these installation methods.
 
 ### Open the local workbench
 
@@ -110,6 +110,24 @@ photo-locate report cases/demo-v1
 ```
 
 Open `cases/demo-v1/report.html` in a browser. The demo draws a **fictional building**, runs entirely offline, and leaves the conclusion at `candidate`. Choose a new empty case directory when rerunning. The installed wheel includes the demo and web assets. No private photographs or third-party map images are bundled.
+
+## Optional research assistant
+
+```bash
+photo-locate ui --env-file /path/to/your/ignored.env.local
+```
+
+Alternatively, set `OPENAI_API_KEY` in the server environment. `OPENAI_MODEL` is optional; the default is `gpt-5.6-terra`. The model must support images, Structured Outputs and Responses API `web_search`. Keys stay on the local server and never enter browser responses, cases or reports.
+
+1. Record checked clues and select the whole photo/native crops (up to four). Notes save after typing pauses; **Save progress** also saves explicitly.
+2. Confirm the selected inputs and choose **Analyze and research**. Images are resized to at most 1600 pixels on the longest edge and re-encoded as JPEG. Those images and a notes snapshot go to OpenAI; the next request searches the web using the saved analysis.
+3. Review observations, queries, checklists and source-linked hypotheses. Suggested candidate URLs must occur in the actual returned web-search sources. A returned source is still unreviewed.
+4. **Add as candidate** explicitly creates an ordinary candidate. The assistant never creates matching official-address/Street View evidence or upgrades a conclusion.
+5. Check completed questions and extend your notes. Image analysis is checkpointed before search. A failed search can continue without repeating saved analysis; interrupted server jobs become resumable after reopening.
+
+Each run uses at most two model requests and two search tool calls. Continuing retries only the unfinished phase, using that run's original images and notes; start a new run for updated clues. Changed inputs block continuation. A timeout does not establish that the remote request was unbilled, and there are no automatic retries. Quota, rate-limit and authentication errors retain saved progress.
+
+The optional `research` field in `case.json` stores notes, checklist progress, run history, input checksums, model and token usage. Research drafts remain in the workbench/case record; formal reports include established candidates and reviewed evidence. Text web search does not perform Google Lens reverse-image search or Street View inspection. OpenAI API calls are billed separately; manual tools remain available without API credits.
 
 ## A complete investigation
 
@@ -230,7 +248,7 @@ cases/trip/
 └── report.pdf
 ```
 
-The code does not read `.env`, require paid model keys, or reuse your normal browser profile. Search captures and investigations stay local unless you upload or share them. Metadata removal does **not** redact visible faces, plates, or text. `.gitignore` excludes common investigation/output folders and raster/PDF files; it is a convenience, not a universal privacy guarantee for arbitrary custom paths.
+Manual tools require no model key. Only an explicit `--env-file` reads `OPENAI_API_KEY` and `OPENAI_MODEL` from a file; server environment variables are also supported. The code never reuses your normal browser profile. Starting optional research sends the selected images, notes snapshot and analysis to OpenAI; generated search queries are used for web search. Other case materials stay local until uploaded or shared. Metadata removal does **not** redact visible faces, plates, or text. `.gitignore` excludes common investigation/output folders and raster/PDF files; it is a convenience, not a universal privacy guarantee for arbitrary custom paths.
 
 This project targets public landmarks and scene comparison. It does not identify people, recover blurred text, or infer a private person's current whereabouts.
 
