@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "photo-location-workflow"
+version = "0.1.0"
+description = "A local, evidence-first workflow for identifying photo locations"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = ["Pillow>=10.4,<13"]
+
+[project.optional-dependencies]
+browser = ["playwright>=1.45,<2"]
+pdf = ["reportlab>=4.2,<6"]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+photo-locate = "photo_location_workflow.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

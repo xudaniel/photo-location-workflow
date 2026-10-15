@@ -1,0 +1,99 @@
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from . import __version__
+from .core import KINDS, LEVELS, VERDICTS, add_evidence, candidate, conclude, crop, init_case, load
+from .lens import LENS_URL, run_lens
+from .report import render_html, render_pdf
+
+
+def box(value):
+    try:
+        values = tuple(int(v) for v in value.split(","))
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("Use x,y,width,height integers.") from exc
+    if len(values) != 4:
+        raise argparse.ArgumentTypeError("Use exactly four integers: x,y,width,height.")
+    return values
+
+
+def parser():
+    p = argparse.ArgumentParser(description="Photo location: image search → distinctive crop → authoritative address → Street View → evidence report")
+    p.add_argument("--version", action="version", version=__version__)
+    sub = p.add_subparsers(dest="command", required=True)
+    init = sub.add_parser("init", help="Create a local case and an EXIF/GPS-free image copy.")
+    init.add_argument("photo", type=Path)
+    init.add_argument("--case", required=True, type=Path)
+    cut = sub.add_parser("crop", help="Crop distinctive details without inventing pixels.")
+    cut.add_argument("case", type=Path)
+    cut.add_argument("--box", type=box, required=True)
+    cut.add_argument("--label", required=True)
+    cut.add_argument("--scale", type=int, default=4)
+    search = sub.add_parser("lens", help="Show search instructions; upload only with explicit --upload.")
+    search.add_argument("case", type=Path)
+    search.add_argument("--asset", help="Native crop path from case.json, e.g. assets/facade.png.")
+    search.add_argument("--upload", action="store_true", help="Send the selected prepared image to Google via a visible browser.")
+    cand = sub.add_parser("candidate", help="Record a candidate, address and source URL.")
+    cand.add_argument("case", type=Path)
+    cand.add_argument("--name", required=True)
+    cand.add_argument("--address", required=True)
+    cand.add_argument("--url", required=True)
+    ev = sub.add_parser("evidence", help="Record a reviewed source or comparison, including uncertainty.")
+    ev.add_argument("case", type=Path)
+    ev.add_argument("--candidate", required=True)
+    ev.add_argument("--kind", choices=KINDS, required=True)
+    ev.add_argument("--url", required=True)
+    ev.add_argument("--verdict", choices=VERDICTS, required=True)
+    ev.add_argument("--notes", required=True)
+    ev.add_argument("--image", type=Path)
+    ev.add_argument("--captured", help="Street View/360 capture month: YYYY-MM or unknown.")
+    done = sub.add_parser("conclude", help="Assign a human-reviewed confidence; evidence requirements are enforced.")
+    done.add_argument("case", type=Path)
+    done.add_argument("--candidate", required=True)
+    done.add_argument("--level", choices=LEVELS, required=True)
+    done.add_argument("--note", required=True)
+    show = sub.add_parser("status", help="Display the complete evidence record.")
+    show.add_argument("case", type=Path)
+    report = sub.add_parser("report", help="Generate a self-contained HTML or PDF comparison.")
+    report.add_argument("case", type=Path)
+    report.add_argument("--format", choices=("html", "pdf"), default="html")
+    report.add_argument("--output", type=Path)
+    report.add_argument("--font-path", type=Path, help="PDF: optional TrueType font containing the required CJK characters.")
+    return p
+
+
+def main(argv=None):
+    args = parser().parse_args(argv)
+    try:
+        if args.command == "init":
+            result = init_case(args.photo, args.case)
+        elif args.command == "crop":
+            result = crop(args.case, args.box, args.label, args.scale)
+        elif args.command == "lens":
+            if args.upload:
+                result = run_lens(args.case, args.asset)
+            else:
+                data = load(args.case)
+                result = {"url": LENS_URL, "prepared_image": str(args.case / (args.asset or data["source"]["asset"])),
+                          "instruction": "Open Google, select Search by image and upload this copy. No upload performed. Use --upload for the optional visible-browser assistant."}
+        elif args.command == "candidate":
+            result = candidate(args.case, args.name, args.address, args.url)
+        elif args.command == "evidence":
+            result = add_evidence(args.case, args.candidate, args.kind, args.url, args.verdict, args.notes, args.image, args.captured)
+        elif args.command == "conclude":
+            result = conclude(args.case, args.candidate, args.level, args.note)
+        elif args.command == "status":
+            result = load(args.case)
+        else:
+            result = render_pdf(args.case, args.output, args.font_path) if args.format == "pdf" else render_html(args.case, args.output)
+        print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+        return 0
+    except (ValueError, OSError, KeyError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
