@@ -9,6 +9,7 @@ from PIL import Image
 
 from photo_location_workflow import geosleuth
 from photo_location_workflow.cli import main
+from photo_location_workflow.tasks import TaskStopped
 from photo_location_workflow.core import candidate, crop, init_case
 
 
@@ -44,7 +45,7 @@ def bridge(tmp_path, monkeypatch):
                 "edges": "ok", "variants": "failed"}, "ocr": [{"text": "uncertain plate", "pass": "up"}]}), encoding="utf-8")
         return SimpleNamespace(returncode=0, stdout="external output", stderr="")
 
-    monkeypatch.setattr(geosleuth.subprocess, "run", external)
+    monkeypatch.setattr(geosleuth, "run_process", external)
     return case, tmp_path / "workspace", skill, calls
 
 
@@ -134,10 +135,10 @@ def test_failed_process_is_logged_and_workspace_is_not_ready(bridge, monkeypatch
 
     def fail(command, **kwargs):
         if timeout:
-            raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+            raise TaskStopped("timed_out")
         return SimpleNamespace(returncode=7, stdout="partial log", stderr="upstream failure")
 
-    monkeypatch.setattr(geosleuth.subprocess, "run", fail)
+    monkeypatch.setattr(geosleuth, "run_process", fail)
     with pytest.raises(ValueError):
         geosleuth.prepare(case, workspace, skill)
     log = json.loads((workspace / "bridge.json").read_text(encoding="utf-8"))
@@ -155,3 +156,22 @@ def test_cli_ocr_is_explicit_and_requires_no_openai_key(bridge, monkeypatch, cap
     assert "--no-rev" in calls[-1] and "--no-ocr" not in calls[-1]
     assert main(["geo-sleuth", "review", str(case), "--workspace", str(workspace)]) == 0
     assert '"review_status": "unreviewed"' in capsys.readouterr().out
+
+
+def test_resume_partial_preparation_does_not_initialize_board_twice(bridge, monkeypatch):
+    case, workspace, skill, calls = bridge
+    original = geosleuth.run_process
+    fail = True
+
+    def interrupted(command, **kwargs):
+        if fail and command[3] == 'add':
+            raise TaskStopped('cancelled')
+        return original(command, **kwargs)
+
+    monkeypatch.setattr(geosleuth, 'run_process', interrupted)
+    with pytest.raises(TaskStopped):
+        geosleuth.prepare(case, workspace, skill)
+    fail = False
+    geosleuth.prepare(case, workspace, skill, resume=True)
+    assert len([call for call in calls if call[3] == 'init']) == 1
+    assert json.loads((workspace/'bridge.json').read_text())['prepared'] is True

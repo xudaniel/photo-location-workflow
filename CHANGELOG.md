@@ -2,6 +2,10 @@
 
 ## Unreleased / 待发行
 
+- Resumable local investigation workbench: actual stage progress, cancel/resume, generated previews, candidate falsification and per-item review history in English/Chinese. / 新增中英文后台调查、真实阶段、取消恢复、预览、反证计划与逐条审阅历史。
+- Streamed bounded subprocess logs, process-tree termination, cross-process workspace locks, preserved preparation/preprocessing checkpoints and a shared web executor. / 持续写入限长日志、清理子进程树、跨进程工作区锁、保存分步进度，并共用网页线程池。
+- Local-job API authorization, restart recovery, input-bound review contexts and regression tests using actual child processes. / 新增本地任务权限、重启恢复、审阅结果绑定及真实子进程回归测试。
+
 - Keyless map workbench: save inspected Street View pose, panorama ID, capture year/month, attribution and manually observed availability; preserve view correction history and reset conclusions for review. / 无密钥地图工作台，保存街景参数、日期、署名、人工覆盖状态与修订历史。
 - Candidate coordinates, Place IDs, provenance and sharing links; coordinate-based satellite, terrain, nearby Street View and OpenStreetMap; Google candidate shortlist. / 固定候选位置、地点 ID 与来源，并提供多图层和候选清单。
 - Google Earth / Mapillary entry points, coordinate-marker KML export, cross-map evidence and expanded HTML/PDF reports. / 增加 Earth、Mapillary 入口、KML 导出、跨地图证据及报告。

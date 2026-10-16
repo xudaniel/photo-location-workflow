@@ -186,10 +186,11 @@ def research_state(data):
 
 class ResearchManager:
     """Persist checkpoints before/after each request; one job per case, two globally."""
-    def __init__(self, client=None, lock=None):
+    def __init__(self, client=None, lock=None, executor=None):
         self.client = client or OpenAIResearch(*settings())
         self.lock = lock or threading.RLock()
-        self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='photo-research')
+        self.executor = executor or ThreadPoolExecutor(max_workers=2, thread_name_prefix='photo-research')
+        self.owns_executor = executor is None
         self.jobs = {}
 
     def snapshot(self, case):
@@ -305,4 +306,5 @@ class ResearchManager:
             return data
 
     def close(self):
-        self.executor.shutdown(wait=False, cancel_futures=True)
+        if self.owns_executor:
+            self.executor.shutdown(wait=False, cancel_futures=True)

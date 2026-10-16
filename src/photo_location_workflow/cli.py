@@ -116,6 +116,7 @@ def parser():
         if step == "prepare":
             command.add_argument("--skill-dir", type=Path)
             command.add_argument("--uv", type=Path)
+            command.add_argument("--resume", action="store_true", help="Resume an interrupted preparation in the same workspace.")
             command.add_argument("--asset", help="Prepared source or native crop listed in case.json.")
         elif step == "intake":
             command.add_argument("--ocr", action="store_true", help="Enable optional OCR; may download model weights.")
@@ -178,7 +179,7 @@ def main(argv=None):
         elif args.command == "geo-sleuth":
             from . import geosleuth
             if args.geo_step == "prepare":
-                result = geosleuth.prepare(args.case, args.workspace, args.skill_dir, args.uv, args.asset)
+                result = geosleuth.prepare(args.case, args.workspace, args.skill_dir, args.uv, args.asset, resume=args.resume)
             elif args.geo_step == "intake":
                 result = geosleuth.intake(args.case, args.workspace, args.ocr)
             else:

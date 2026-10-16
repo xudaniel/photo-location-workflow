@@ -147,13 +147,15 @@ Default HTML embeds images and makes no automatic network requests. Clicking a s
 
 ## `geo-sleuth` / 可选本地调查桥接
 
+The web workbench also provides local investigation jobs with live logs, cancel/resume, previews and clue reviews. / 网页也支持本地后台调查、实时日志、取消恢复、辅助图及逐条线索审阅。
+
 ```bash
 photo-locate geo-sleuth prepare cases/trip --workspace private/trip-investigation --skill-dir tools/geo-sleuth/skills/geo-sleuth
 photo-locate geo-sleuth intake cases/trip --workspace private/trip-investigation
 photo-locate geo-sleuth review cases/trip --workspace private/trip-investigation
 ```
 
-Requires a separately installed geo-sleuth skill and uv. Preparation exports the verified source, or `--asset` native crop, to a new external workspace. Intake disables image-search uploads and defaults to no OCR; `--ocr` explicitly enables optional model downloads. Review writes unreviewed hypotheses outside the case. No evidence or confidence is changed. See the [bilingual integration guide](geo-sleuth.md) for setup, board commands, provenance and limits. / 需独立安装 geo-sleuth 和 uv；导出准备图或原生裁切到新的独立工作区。默认不运行 OCR，始终不上传搜图；`--ocr` 可启用模型下载。审阅结果保持为案卷外的待核对假设，不改证据及结论。完整步骤见[中英文说明](geo-sleuth.md#简体中文)。
+Use `prepare ... --resume` to continue interrupted CLI preparation. Requires a separately installed geo-sleuth skill and uv. Preparation exports the verified source, or `--asset` native crop, to a new external workspace. Intake disables image-search uploads and defaults to no OCR; `--ocr` explicitly enables optional model downloads. Review writes unreviewed hypotheses outside the case. No evidence or confidence is changed. See the [bilingual integration guide](geo-sleuth.md) for setup, board commands, provenance and limits. / 需独立安装 geo-sleuth 和 uv；导出准备图或原生裁切到新的独立工作区。默认不运行 OCR，始终不上传搜图；`--ocr` 可启用模型下载。审阅结果保持为案卷外的待核对假设，不改证据及结论。完整步骤见[中英文说明](geo-sleuth.md#简体中文)。
 
 ## `status` and version / 状态与版本
 
