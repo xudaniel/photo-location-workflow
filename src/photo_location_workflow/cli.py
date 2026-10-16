@@ -107,6 +107,18 @@ def parser():
     maps.add_argument('--kml', type=Path)
     parse = sub.add_parser('map-parse', help='Read explicit parameters from documented Google api=1 URLs; no network.')
     parse.add_argument('url')
+    geo = sub.add_parser("geo-sleuth", help="Optional local geo-sleuth preprocessing and candidate-board bridge.")
+    steps = geo.add_subparsers(dest="geo_step", required=True)
+    for step in ("prepare", "intake", "review"):
+        command = steps.add_parser(step)
+        command.add_argument("case", type=Path)
+        command.add_argument("--workspace", type=Path, required=True)
+        if step == "prepare":
+            command.add_argument("--skill-dir", type=Path)
+            command.add_argument("--uv", type=Path)
+            command.add_argument("--asset", help="Prepared source or native crop listed in case.json.")
+        elif step == "intake":
+            command.add_argument("--ocr", action="store_true", help="Enable optional OCR; may download model weights.")
     return p
 
 
@@ -163,6 +175,14 @@ def main(argv=None):
             result = conclude(args.case, args.candidate, args.level, args.note)
         elif args.command == "status":
             result = load(args.case)
+        elif args.command == "geo-sleuth":
+            from . import geosleuth
+            if args.geo_step == "prepare":
+                result = geosleuth.prepare(args.case, args.workspace, args.skill_dir, args.uv, args.asset)
+            elif args.geo_step == "intake":
+                result = geosleuth.intake(args.case, args.workspace, args.ocr)
+            else:
+                result = geosleuth.review(args.case, args.workspace)
         else:
             result = render_pdf(args.case, args.output, args.font_path) if args.format == "pdf" else render_html(args.case, args.output)
         print(json.dumps(result, ensure_ascii=not sys.stdout.isatty(), indent=2, default=str))

@@ -6,6 +6,8 @@
 - Candidate coordinates, Place IDs, provenance and sharing links; coordinate-based satellite, terrain, nearby Street View and OpenStreetMap; Google candidate shortlist. / 固定候选位置、地点 ID 与来源，并提供多图层和候选清单。
 - Google Earth / Mapillary entry points, coordinate-marker KML export, cross-map evidence and expanded HTML/PDF reports. / 增加 Earth、Mapillary 入口、KML 导出、跨地图证据及报告。
 - Four map CLI commands, conservative standard-URL parsing, finite coordinate/camera validation and schema-v1 compatibility. No automatic map fetching, short-link expansion or geolocation claims. / 新增四个命令、保守解析与参数校验，兼容旧记录；不自动抓取地图或猜测链接含义。
+- Optional CLI bridge to separately installed MIT-licensed geo-sleuth: prepared-image export, candidate board, local preprocessing, explicit OCR and unreviewed research snapshots. / 可选接入独立安装的 geo-sleuth，支持准备图导出、候选板、本地预处理、显式 OCR 和待审阅快照。
+- Input/script provenance, failed/partial command logs and integrity checks; reverse-image uploads disabled, case evidence and confidence unchanged. / 保存输入与脚本校验信息、失败及部分成功日志；禁止桥接自动上传搜图，不修改案卷证据和结论。
 
 ## 1.3.0 — 2026-10-16
 
