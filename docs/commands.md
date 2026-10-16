@@ -8,6 +8,8 @@ All commands support `--help`. Most successful commands print JSON to stdout; `u
 | `1` | `check` found integrity errors / `check` 发现文件完整性错误。 |
 | `2` | Invalid arguments or a handled operation error / 参数或操作错误。 |
 
+When stdout is redirected, JSON uses standard Unicode escapes so legacy Windows pipe encodings can read it; decoded values are unchanged. Interactive terminals retain readable Unicode. / 重定向输出采用标准 Unicode 转义，兼容 Windows 旧编码管道，JSON 解码后的内容保持不变；交互终端保留可读中文。
+
 ## `ui` / 本地网页工作台
 
 ```bash

@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from urllib.parse import parse_qs, urlsplit
@@ -82,7 +83,7 @@ def test_location_history_shortlist_and_kml(case):
     data = load(case)
     assert 'query_place_id=sample' in data['candidates'][0]['maps_url']
     assert 'place_ids=sample' in shortlist_url(data)
-    assert 'Coordinates / 坐标: 0.0, 140.123456789' in render_html(case).read_text()
+    assert 'Coordinates / 坐标: 0.0, 140.123456789' in render_html(case).read_text(encoding='utf-8')
     xml = ET.fromstring(export_kml(data))
     assert xml.find('.//{*}coordinates').text == '140.123456789,0.0,0'
     assert xml.find('.//{*}name').text == 'c1 · Synthetic <landmark>'
@@ -109,7 +110,7 @@ def test_saved_view_report_history_integrity_and_assets(case):
     assert e['map_view']['availability'] == 'unavailable'
     assert e['captured'] == 'unknown' and 'saved_at' in e['map_view']
     assert check_case(case)['ok']
-    report = render_html(case).read_text()
+    report = render_html(case).read_text(encoding='utf-8')
     assert 'Heading / 朝向: 22.0' in report and 'Heading / 朝向: 12.0' in report
     assert 'Synthetic attribution' in report and 'Panorama IDs can expire' in report
     assert 'Reopen saved view' in report
@@ -143,3 +144,12 @@ def test_map_cli_round_trip(case,tmp_path):
     call('map-links',case,'--kml',path)
     assert ET.parse(path).find('.//{*}coordinates').text == '140.0,0.0,0'
     assert call('map-parse','https://maps.app.goo.gl/test')['status'] == 'link_only'
+
+
+def test_map_cli_json_survives_legacy_pipe_encoding(case):
+    save_location(case,'c1',{'latitude':0,'longitude':140})
+    result = subprocess.run([sys.executable,'-m','photo_location_workflow','map-links',str(case)],
+        capture_output=True, text=True, encoding='ascii', env={**os.environ,'PYTHONIOENCODING':'cp1252'})
+    assert result.returncode == 0, result.stderr
+    links = json.loads(result.stdout)['candidates']['c1']
+    assert any('卫星' in label for label, url in links)

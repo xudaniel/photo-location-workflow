@@ -165,7 +165,7 @@ def main(argv=None):
             result = load(args.case)
         else:
             result = render_pdf(args.case, args.output, args.font_path) if args.format == "pdf" else render_html(args.case, args.output)
-        print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+        print(json.dumps(result, ensure_ascii=not sys.stdout.isatty(), indent=2, default=str))
         return 1 if args.command == 'check' and not result['ok'] else 0
     except (ValueError, OSError, KeyError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
