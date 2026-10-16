@@ -19,6 +19,7 @@ from . import __version__
 from .annotations import add_annotation, remove_annotation
 from .core import add_evidence, asset_path, candidate, check_case, conclude, crop, init_case, load, review_evidence, save
 from .demo import create_demo
+from .maps import candidate_links, export_kml, parse_google_url, save_location, save_view, shortlist_url
 from .report import render_html, render_pdf
 from .research import OpenAIResearch, ResearchManager, settings
 
@@ -72,18 +73,23 @@ def create_server(cases_root, port=0, research_client=None):
 
         def _state(self, path):
             data = load(path)
-            return {'id': path.name, 'data': data, 'integrity': check_case(path)}
+            try:
+                shortlist = shortlist_url(data)
+            except ValueError:
+                shortlist = None
+            return {'id': path.name, 'data': data, 'integrity': check_case(path),
+                    'maps': {'candidates': {c['id']: candidate_links(c) for c in data['candidates']}, 'shortlist_url': shortlist}}
 
         def do_GET(self):
             if not self._host_ok():
                 return self._send({'error': 'Unexpected host.'}, status=403)
             parsed = urlsplit(self.path)
-            if parsed.path in ('/', '/app.js', '/comparison.js', '/research.js', '/style.css'):
-                name = {'/': 'index.html', '/app.js': 'app.js', '/comparison.js': 'comparison.js', '/research.js': 'research.js', '/style.css': 'style.css'}[parsed.path]
+            if parsed.path in ('/', '/app.js', '/comparison.js', '/research.js', '/maps.js', '/style.css'):
+                name = {'/': 'index.html', '/app.js': 'app.js', '/comparison.js': 'comparison.js', '/research.js': 'research.js', '/maps.js': 'maps.js', '/style.css': 'style.css'}[parsed.path]
                 value = static.joinpath(name).read_bytes()
                 if name == 'index.html':
                     value = value.replace(b'__LOCAL_TOKEN__', token.encode())
-                return self._send(value, {'index.html': 'text/html', 'app.js': 'text/javascript', 'comparison.js': 'text/javascript', 'research.js': 'text/javascript', 'style.css': 'text/css'}[name])
+                return self._send(value, {'index.html': 'text/html', 'app.js': 'text/javascript', 'comparison.js': 'text/javascript', 'research.js': 'text/javascript', 'maps.js': 'text/javascript', 'style.css': 'text/css'}[name])
             if not self._authorized():
                 return self._send({'error': 'Local session authorization required.'}, status=403)
             try:
@@ -100,10 +106,12 @@ def create_server(cases_root, port=0, research_client=None):
                         return self._send({'cases': sorted(items, key=lambda c: c['updated_at'], reverse=True), 'version': __version__})
                     if parsed.path == '/api/research':
                         return self._send({'configured': research.client.configured, 'model': research.client.model})
-                    match = re.fullmatch(r'/api/cases/([^/]+)(?:/(asset|report|research))?', parsed.path)
+                    match = re.fullmatch(r'/api/cases/([^/]+)(?:/(asset|report|research|kml))?', parsed.path)
                     if not match:
                         return self._send({'error': 'Not found.'}, status=404)
                     path = self._case(unquote(match[1]))
+                    if match[2] == 'kml':
+                        return self._send(export_kml(load(path)), 'application/vnd.google-earth.kml+xml', filename='candidate-places.kml')
                     if match[2] == 'research':
                         return self._send(research.snapshot(path))
                     if match[2] == 'asset':
@@ -164,7 +172,9 @@ def create_server(cases_root, port=0, research_client=None):
                             data['title'] = str(body.get('title', 'Untitled photo'))[:100]
                             save(path, data)
                         return self._send(self._state(path), status=201)
-                    match = re.fullmatch(r'/api/cases/([^/]+)/(crop|candidate|evidence|review|conclude|annotate|unannotate|research|progress|adopt)', route)
+                    if route == '/api/maps/parse':
+                        return self._send(parse_google_url(body['url']))
+                    match = re.fullmatch(r'/api/cases/([^/]+)/(crop|candidate|evidence|review|conclude|annotate|unannotate|research|progress|adopt|map-location|map-view)', route)
                     if not match:
                         return self._send({'error': 'Not found.'}, status=404)
                     path = self._case(unquote(match[1]))
@@ -179,11 +189,15 @@ def create_server(cases_root, port=0, research_client=None):
                         if not isinstance(box, list) or len(box) != 4 or any(type(v) is not int for v in box):
                             raise ValueError('Select a rectangular detail in the photo.')
                         crop(path, box, body['label'], int(body.get('scale', 4)))
+                    elif match[2] == 'map-location':
+                        save_location(path, body['candidate'], body['location'])
+                    elif match[2] == 'map-view':
+                        save_view(path, body['evidence'], body['view'], body.get('captured'), body.get('provider'))
                     elif match[2] == 'candidate':
                         candidate(path, body['name'], body['address'], body['url'])
                     elif match[2] == 'evidence':
                         photo = self._upload(body['image'], temporary) if body.get('image') else None
-                        add_evidence(path, body['candidate'], body['kind'], body['url'], body['verdict'], body['notes'], photo, body.get('captured') or None, body.get('provider'))
+                        add_evidence(path, body['candidate'], body['kind'], body['url'], body['verdict'], body['notes'], photo, body.get('captured') or None, body.get('provider'), body.get('map_view'))
                     elif match[2] == 'review':
                         review_evidence(path, body['evidence'], body['verdict'], body['reason'])
                     elif match[2] == 'annotate':

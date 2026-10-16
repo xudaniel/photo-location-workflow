@@ -82,7 +82,7 @@ photo-locate evidence cases/trip --candidate c1 --kind streetview \
 | --- | --- |
 | `--kind` | `official`, `streetview`, `reference`, `text` |
 | `--verdict` | `match`, `unclear`, `contradiction` |
-| `--captured` | Required for `streetview`: `YYYY-MM` or `unknown` / 街景必填。 |
+| `--captured` | Required for `streetview`: `YYYY`, `YYYY-MM` or `unknown` / 街景必填。 |
 | `--provider` | Optional provider/contributor description / 可选提供者说明。 |
 | `--image` | Optional local screenshot/reference; copied without metadata / 可选附图，导入时移除元数据。 |
 
@@ -152,3 +152,7 @@ python -m photo_location_workflow --help
 ```
 
 `status` prints the local record without modifying it. / `status` 只读显示调查记录。
+
+## `map-location`, `map-view`, `map-parse`, `map-links` (main / next release)
+
+See the [bilingual maps guide](maps.md) for candidate coordinates / Place IDs, saved camera parameters, manual coverage status, supported URL parsing and KML export. Map links require no API key. / 见[地图指南](maps.md)，涵盖位置、视角、人工覆盖状态、链接解析与 KML；地图链接无需密钥。

@@ -117,3 +117,24 @@ def test_paired_regions_round_trip_through_http(workbench, image_data):
     state = request(case + '/unannotate', {'evidence': 'e1', 'annotation': 'a1', 'reason': 'Wrong detail'})
     assert not state['data']['evidence'][0]['annotations']
     assert state['data']['evidence'][0]['annotation_history'][0]['reason'] == 'Wrong detail'
+
+
+def test_maps_http_storage_replay_and_exports(workbench):
+    request, _ = workbench
+    state = request('/api/demo', {})
+    case = '/api/cases/' + state['id']
+    assert b'MapsWorkbench' in request('/maps.js')
+    parsed = request('/api/maps/parse', {'url':'https://www.google.com/maps/search/?api=1&query=0,140&query_place_id=sample'})
+    state = request(case + '/map-location', {'candidate':'c1','location':parsed['fields']})
+    assert state['maps']['shortlist_url']
+    assert state['data']['candidates'][0]['map_location']['latitude'] == 0
+    view = {'tool':'google_earth','original_url':'https://earth.google.com/web/'}
+    state = request(case + '/map-view', {'evidence':'e1','view':view,'captured':'2025','provider':'Synthetic only'})
+    assert state['data']['evidence'][0]['map_view']['replay_mode'] == 'saved_link'
+    assert request(case)['integrity']['ok']
+    assert b'<coordinates>140.0,0.0,0</coordinates>' in request(case + '/kml')
+    assert b'Reopen saved view' in request(case + '/report?format=html')
+    with pytest.raises(HTTPError):
+        request(case + '/map-view', {'evidence':'e1','view':{'tool':'google_streetview','pano':'test'},'captured':'unknown'})
+    with pytest.raises(HTTPError):
+        request('/api/maps/parse', {'url':'file:///etc/passwd'})

@@ -1,5 +1,12 @@
 # Changelog / 更新记录
 
+## Unreleased / 待发行
+
+- Keyless map workbench: save inspected Street View pose, panorama ID, capture year/month, attribution and manually observed availability; preserve view correction history and reset conclusions for review. / 无密钥地图工作台，保存街景参数、日期、署名、人工覆盖状态与修订历史。
+- Candidate coordinates, Place IDs, provenance and sharing links; coordinate-based satellite, terrain, nearby Street View and OpenStreetMap; Google candidate shortlist. / 固定候选位置、地点 ID 与来源，并提供多图层和候选清单。
+- Google Earth / Mapillary entry points, coordinate-marker KML export, cross-map evidence and expanded HTML/PDF reports. / 增加 Earth、Mapillary 入口、KML 导出、跨地图证据及报告。
+- Four map CLI commands, conservative standard-URL parsing, finite coordinate/camera validation and schema-v1 compatibility. No automatic map fetching, short-link expansion or geolocation claims. / 新增四个命令、保守解析与参数校验，兼容旧记录；不自动抓取地图或猜测链接含义。
+
 ## 1.3.0 — 2026-10-16
 
 - Optional OpenAI research workbench: image observations, search queries, source-linked candidate hypotheses and verification questions. / 可选 OpenAI 研究助手，整理观察、搜索词、附来源假设与核对问题。

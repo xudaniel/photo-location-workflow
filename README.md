@@ -34,12 +34,25 @@ flowchart LR
 | Image preparation | Corrects EXIF orientation, strips metadata, preserves the input file, and records checksums. |
 | Distinctive crops | Saves native-resolution crops and nearest-neighbor enlargements in isolated directories. |
 | Google Lens assistance | Prints manual instructions by default; optional `--upload` uses a visible, disposable Chromium session. |
-| Structured evidence | Records candidates, addresses, source URLs, capture months, providers, matches, uncertainty, and contradictions. |
+| Structured evidence | Records candidates, addresses, source URLs, capture years/months, providers, matches, uncertainty, and contradictions. |
 | Review history | Revises a verdict with a mandatory explanation while retaining the previous judgment. |
 | Integrity checks | Detects missing or changed assets, unsafe paths, and broken candidate references. |
 | Confidence requirements | Requires documented address and visual evidence before accepting stronger conclusions. |
 | Paired detail comparison | Synchronized zoom and relative dragging, independently drawn corresponding regions, numbered labels and click-to-focus. |
 | Comparison reports | Builds self-contained HTML and CJK-capable PDFs with source links, paired images, and review history. |
+
+## Map investigation (main / next release)
+
+Save inspected Street View camera parameters and capture dates, pin candidate coordinates / Place IDs, and compare satellite, terrain and alternate map sources. Export candidate KML for Earth, reopen saved views and include corrections in HTML/PDF reports. **Map links need no Google key; source inspection remains manual.**
+
+See the [bilingual map workflow and CLI guide](docs/maps.md) for replay modes, supported URLs and coverage limits. These additions are on `main`; the latest tagged release remains v1.3.0. To try them from an existing checkout:
+
+```bash
+git switch main
+git pull --ff-only
+python -m pip install -e '.[pdf]'
+photo-locate ui
+```
 
 ## Local workbench
 
@@ -94,7 +107,7 @@ photo-locate ui
 
 1. Drop or choose a photo, draw a rectangle around a distinctive detail, and save the crop.
 2. Save the search image, open Google Lens separately, upload manually, and record candidates and authoritative addresses.
-3. Add sources, capture months, providers and reference images. Review matches and contradictions with paired images.
+3. Add sources, capture years/months, providers and reference images. Review matches and contradictions with paired images.
 4. Preserve review reasons, save a conclusion, and download HTML or PDF.
 
 The workbench listens only on `127.0.0.1` and uses the same `case.json` and validation rules as the CLI. No Node, frontend build or model key is needed. Use `--cases` to choose a case directory, `--port` to change the port, or `--no-open` to skip opening a browser. Avoid editing the same case from another process while it runs. Press Ctrl-C to stop; reopen it later to continue.
@@ -192,7 +205,7 @@ photo-locate evidence cases/trip --candidate c1 --kind streetview \
   --notes 'The central crest rock, right-side layered wall, and left-bank tree positions align.'
 ```
 
-Use `--captured unknown` if no capture month is visible. Use `unclear` when details are inconclusive, or `contradiction` when they conflict. The CLI imports a metadata-free copy of the screenshot and records its checksum.
+Use the displayed year (`--captured 2025`) if no month is visible, or `--captured unknown` when no date is available. Use `unclear` when details are inconclusive, or `contradiction` when they conflict. The CLI imports a metadata-free copy of the screenshot and records its checksum.
 
 ### 5 · Review, check, and conclude
 

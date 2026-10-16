@@ -1081,3 +1081,5 @@ footer {
 .research-results small {
   color: var(--muted);
 }
+
+.map-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px}.map-grid h3{font-size:17px;margin:20px 0}.map-grid form{display:grid;gap:12px}.map-grid label{min-width:0}.map-links{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.map-links .button{font-size:12px;padding:9px 12px}.map-camera{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.map-view-log{margin-top:24px}.map-grid [hidden]{display:none!important}@media(max-width:1050px){.map-grid{grid-template-columns:minmax(0,1fr)}}

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .core import asset_path, check_case, load, web_url
 from .comparison import comparison_image
+from .maps import VIEW_NOTICE, candidate_links, view_summary
 
 DISCLAIMER = ('Confidence is a human review decision, not a calibrated probability. '
               'Enlarging pixels does not recover unreadable text. '
@@ -31,10 +32,10 @@ def checked_data(case):
 def render_html(case, output=None):
     data, integrity = checked_data(case)
     output = prepare_output(case, output, 'html')
-    esc = lambda s: html.escape(str(s or ''), quote=True)
+    esc = lambda s: html.escape(str('' if s is None else s), quote=True)
 
     def link(url, label):
-        return f'<a href="{esc(web_url(url))}" rel="noreferrer">{esc(label)} ↗</a>'
+        return f'<a href="{esc(web_url(url))}" rel="noreferrer">{esc(label)} ↗</a> '
 
     def image(relative, label, annotations=(), box_key='source_box', detail=None):
         raw = comparison_image(case, relative, annotations, box_key, detail).getvalue() if annotations or detail is not None else asset_path(case, relative).read_bytes()
@@ -58,11 +59,22 @@ def render_html(case, output=None):
              card('Source image / 原图副本', image(data['source']['asset'], 'Orientation normalized · metadata removed / 已校正方向、移除元数据'), 'source')]
     for c in data['candidates']:
         parts.append(card(f'{c["id"]} · {c["name"]}', f'<p>{esc(c["address"])}</p><div class="links">'
-                          + link(c['source_url'], 'Address source / 地址来源') + link(c['maps_url'], 'Google Maps') + '</div>', c['id']))
+                          + link(c['source_url'], 'Address source / 地址来源') + ''.join(link(url, label) for label, url in candidate_links(c)) + '</div>'
+                          + (f'<p>Coordinates / 坐标: {esc(c["map_location"].get("latitude"))}, {esc(c["map_location"].get("longitude"))}<br>Place ID: {esc(c["map_location"].get("place_id"))}<br>{esc(c["map_location"].get("notes"))}</p>' if c.get('map_location') else ''), c['id']))
         for e in (e for e in data['evidence'] if e['candidate_id'] == c['id']):
             body = (f'<div class="meta"><span class="badge {esc(e["verdict"])}">{esc(e["verdict"])}</span>'
                     f'<span>{esc(e["kind"])}</span><span>Captured: {esc(e.get("captured") or "not recorded")}</span></div>'
                     f'<p class="provider">{esc(e.get("provider") or "Provider not recorded / 未记录提供者")}</p><p>{esc(e["notes"])}</p>')
+            if e.get('map_view'):
+                view = e['map_view']
+                body += f'<p>{esc(view_summary(view))}</p><p class="hint">{esc(VIEW_NOTICE)}</p>' + link(view['replay_url'], 'Reopen saved view / 重开已存视角')
+                if view.get('original_url'):
+                    body += link(view['original_url'], 'Original inspected URL / 实际查看链接')
+                for previous in e.get('view_history', []):
+                    body += f'<details><summary>View correction / 视角修订 · {esc(previous["at"])}</summary><p>{esc(view_summary(previous["previous"]) if previous.get("previous") else "No previous view / 之前未存视角")}<br>Captured: {esc(previous.get("captured"))} · {esc(previous.get("provider"))}</p>'
+                    if previous.get('previous'):
+                        body += link(previous['previous']['replay_url'], 'Previous view / 之前视角')
+                    body += '</details>'
             if e['asset']:
                 annotations = e.get('annotations', [])
                 body += '<div class="compare">' + image(data['source']['asset'], 'Source / 原图', annotations) + image(e['asset'], 'Reference / 对照影像', annotations, 'reference_box') + '</div>'
@@ -106,7 +118,7 @@ def render_pdf(case, output=None, font_path=None):
         from reportlab.lib.utils import ImageReader
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
-        from reportlab.platypus import Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+        from reportlab.platypus import Image, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
     except ImportError as exc:
         raise ValueError('Install PDF support: pip install -e ".[pdf]"') from exc
     data, integrity = checked_data(case)
@@ -150,8 +162,22 @@ def render_pdf(case, output=None, font_path=None):
     story += [Paragraph(DISCLAIMER, caption), Spacer(1, 12), image(data['source']['asset'], 510, 420)]
     for c in data['candidates']:
         story += [PageBreak(), p(f'{c["id"]}: {c["name"]}', True), p(c['address']), link(c['source_url'], 'Address source / 地址来源'), link(c['maps_url'], 'Open Google Maps / 打开地图')]
+        if c.get('map_location'):
+            context = c['map_location']
+            story += [p(f'Coordinates / 坐标: {context.get("latitude")}, {context.get("longitude")}'), p(f'Place ID: {context.get("place_id", "")}'), p(context.get('notes', ''))]
+        story += [link(url, label) for label, url in candidate_links(c) if label != 'Google Maps']
         for e in (e for e in data['evidence'] if e['candidate_id'] == c['id']):
             story += [p(f'{e["id"]}: {e["kind"]} / {e["verdict"]} / {e.get("captured") or "date not recorded"}'), p(e.get('provider') or 'Provider not recorded / 未记录提供者'), p(e['notes']), link(e['url'], 'View evidence source / 查看证据来源')]
+            if e.get('map_view'):
+                view = e['map_view']
+                story += [Paragraph(html.escape(view_summary(view)), caption), Spacer(1, 8), p(VIEW_NOTICE), link(view['replay_url'], 'Reopen saved view / 重开已存视角')]
+                if view.get('original_url'):
+                    story += [link(view['original_url'], 'Original inspected URL / 实际查看链接')]
+                for previous in e.get('view_history', []):
+                    history = [p(f'View correction / 视角修订: {previous["at"]}'), Paragraph(html.escape(view_summary(previous['previous']) if previous.get('previous') else 'No previous view / 之前未存视角'), caption), p(f'Captured: {previous.get("captured")} / {previous.get("provider")}')]
+                    if previous.get('previous'):
+                        history += [link(previous['previous']['replay_url'], 'Previous view / 之前视角')]
+                    story += [KeepTogether(history)]
             if e['asset']:
                 annotations = e.get('annotations', [])
                 story += [pair(image(data['source']['asset'], annotations=annotations), image(e['asset'], annotations=annotations, box_key='reference_box')), Spacer(1, 14)]

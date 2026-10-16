@@ -157,7 +157,7 @@ def selected_asset(case, relative=None):
     return relative, path
 
 
-def add_evidence(case, candidate_id, kind, url, verdict, notes, image=None, captured=None, provider=None):
+def add_evidence(case, candidate_id, kind, url, verdict, notes, image=None, captured=None, provider=None, map_view=None):
     data = load(case)
     find_candidate(data, candidate_id)
     if kind not in KINDS or verdict not in VERDICTS:
@@ -165,17 +165,17 @@ def add_evidence(case, candidate_id, kind, url, verdict, notes, image=None, capt
     web_url(url)
     if not notes.strip():
         raise ValueError("Describe the observed details or uncertainty.")
-    if kind == "streetview" and captured != 'unknown':
-        try:
-            if not captured or not re.fullmatch(r'[0-9]{4}-[0-9]{2}', captured):
-                raise ValueError
-            datetime.strptime(captured, '%Y-%m')
-        except ValueError as exc:
-            raise ValueError("Street View needs --captured YYYY-MM, or unknown when no date is displayed.") from exc
+    from .maps import capture_date, clean_view
+    captured = capture_date(captured, kind == 'streetview')
+    view = clean_view(map_view) if map_view is not None else None
+    if view and view['tool'] == 'google_streetview' and kind != 'streetview':
+        raise ValueError('Google Street View requires Street View evidence.')
     item = {"id": f"e{len(data['evidence']) + 1}", "candidate_id": candidate_id,
             "kind": kind, "url": url, "verdict": verdict, "notes": notes,
             "captured": captured, "provider": provider, "reviewed_at": now(), "asset": None,
             "original_verdict": verdict, "reviews": []}
+    if view:
+        item['map_view'] = {**view, 'saved_at': now()}
     if image:
         item["asset"] = f"assets/evidence/{item['id']}.png"
         copy_image(image, asset_path(case, item["asset"]))
@@ -230,7 +230,24 @@ def check_case(case):
         errors.append('Duplicate candidate IDs.')
     if len({e['id'] for e in data['evidence']}) != len(data['evidence']):
         errors.append('Duplicate evidence IDs.')
+    from .maps import clean_location, clean_view, capture_date
+    for c in data['candidates']:
+        if c.get('map_location') is not None:
+            try:
+                clean_location(c['map_location'])
+            except (ValueError, TypeError, AttributeError) as exc:
+                errors.append(f"Invalid map location in {c['id']}: {exc}")
     for e in data['evidence']:
+        if e.get('map_view') is not None:
+            try:
+                normalized = clean_view(e['map_view'])
+                if normalized['replay_url'] != e['map_view'].get('replay_url') or normalized['replay_mode'] != e['map_view'].get('replay_mode'):
+                    raise ValueError('Saved replay URL / mode does not match its parameters.')
+                if normalized['tool'] == 'google_streetview' and e['kind'] != 'streetview':
+                    raise ValueError('Google Street View requires Street View evidence.')
+                capture_date(e.get('captured'), True)
+            except (ValueError, TypeError, AttributeError) as exc:
+                errors.append(f"Invalid map view in {e['id']}: {exc}")
         if e['candidate_id'] not in ids:
             errors.append(f"Unknown candidate in {e['id']}.")
         try:

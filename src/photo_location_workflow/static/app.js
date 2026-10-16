@@ -1,3 +1,4 @@
+import { MapsWorkbench } from "/maps.js";
 import { ResearchWorkbench } from "/research.js";
 import { ComparisonWorkbench } from "/comparison.js";
 ("use strict");
@@ -53,7 +54,7 @@ const translations = {
     match: "Match",
     unclear: "Unclear",
     contradiction: "Contradiction",
-    captured: "Image capture month",
+    captured: "Image capture year / month",
     provider: "Provider / contributor",
     observation: "What matches or differs?",
     referenceImage: "Reference image (optional)",
@@ -142,7 +143,7 @@ const translations = {
     match: "吻合",
     unclear: "暂不确定",
     contradiction: "存在矛盾",
-    captured: "影像拍摄月份",
+    captured: "影像拍摄年 / 月",
     provider: "影像提供者 / 贡献者",
     observation: "哪些细节吻合或不符？",
     referenceImage: "参考图片（可选）",
@@ -375,7 +376,7 @@ async function render() {
     : "candidate";
   const note = data.conclusion.note || "";
   $("#conclusion-form textarea").value =
-    /^(Awaiting|New evidence|Evidence reviewed|Comparison annotations)/.test(
+    /^(Awaiting|New evidence|Evidence reviewed|Comparison annotations|Map location changed|Map viewpoint changed)/.test(
       note,
     )
       ? ""
@@ -427,6 +428,7 @@ async function render() {
   translate();
   await comparison.update(active, chosen);
   await research.update(active, language);
+  maps.update(active, chosen, language);
 }
 function draw() {
   if (!sceneImage) return;
@@ -646,6 +648,7 @@ $("#demo").addEventListener("click", () =>
     notify(t("demoReady"));
   }),
 );
+const maps = new MapsWorkbench({container: $("#maps-workspace"), request, mutate, run, notify, fileBase64, download});
 const research = new ResearchWorkbench({
   container: $("#research-workspace"),
   request,

@@ -6,6 +6,7 @@ from pathlib import Path
 from . import __version__
 from .annotations import add_annotation, remove_annotation
 from .core import KINDS, LEVELS, VERDICTS, add_evidence, candidate, check_case, conclude, crop, init_case, load, review_evidence, selected_asset
+from .maps import TOOLS, candidate_links, export_kml, parse_google_url, save_location, save_view, shortlist_url
 from .lens import LENS_URL, run_lens
 from .report import render_html, render_pdf
 
@@ -56,7 +57,7 @@ def parser():
     ev.add_argument("--verdict", choices=VERDICTS, required=True)
     ev.add_argument("--notes", required=True)
     ev.add_argument("--image", type=Path)
-    ev.add_argument("--captured", help="Street View/360 capture month: YYYY-MM or unknown.")
+    ev.add_argument("--captured", help="Street View/360 capture year YYYY, month YYYY-MM, or unknown.")
     ev.add_argument("--provider", help="E.g. Google Street View, or a named visitor's 360 panorama.")
     review = sub.add_parser('review', help='Revise a verdict without erasing its earlier judgment.')
     review.add_argument('case', type=Path)
@@ -88,6 +89,24 @@ def parser():
     report.add_argument("--format", choices=("html", "pdf"), default="html")
     report.add_argument("--output", type=Path)
     report.add_argument("--font-path", type=Path, help="PDF: optional TrueType font containing the required CJK characters.")
+    loc = sub.add_parser('map-location', help='Save manually checked candidate coordinates / Place ID / share URL.')
+    loc.add_argument('case', type=Path)
+    loc.add_argument('--candidate', required=True)
+    for field in ('latitude', 'longitude', 'place-id', 'shared-url', 'notes'):
+        loc.add_argument('--' + field)
+    view = sub.add_parser('map-view', help='Attach a replayable inspected map view to existing evidence.')
+    view.add_argument('case', type=Path)
+    view.add_argument('--evidence', required=True)
+    view.add_argument('--tool', choices=TOOLS, required=True)
+    for field in ('original-url', 'latitude', 'longitude', 'pano', 'heading', 'pitch', 'fov', 'provider'):
+        view.add_argument('--' + field)
+    view.add_argument('--captured', default='unknown')
+    view.add_argument('--availability', choices=('unreviewed', 'available', 'unavailable'), default='unreviewed')
+    maps = sub.add_parser('map-links', help='Show candidate map links or export coordinate markers as KML for Earth.')
+    maps.add_argument('case', type=Path)
+    maps.add_argument('--kml', type=Path)
+    parse = sub.add_parser('map-parse', help='Read explicit parameters from documented Google api=1 URLs; no network.')
+    parse.add_argument('url')
     return p
 
 
@@ -112,6 +131,22 @@ def main(argv=None):
                 _, path = selected_asset(args.case, args.asset)
                 result = {"url": LENS_URL, "prepared_image": str(path),
                           "instruction": "Open Google, select Search by image and upload this copy. No upload performed. Use --upload for the optional visible-browser assistant."}
+        elif args.command == 'map-location':
+            result = save_location(args.case, args.candidate, {k: getattr(args, k) for k in ('latitude', 'longitude', 'place_id', 'shared_url', 'notes')})
+        elif args.command == 'map-view':
+            result = save_view(args.case, args.evidence, {k: getattr(args, k) for k in ('tool', 'availability', 'original_url', 'latitude', 'longitude', 'pano', 'heading', 'pitch', 'fov')}, args.captured, args.provider)
+        elif args.command == 'map-parse':
+            result = parse_google_url(args.url)
+        elif args.command == 'map-links':
+            data = load(args.case)
+            if args.kml:
+                from .report import prepare_output
+                output = prepare_output(args.case, args.kml, 'kml')
+                raw = export_kml(data)
+                output.write_bytes(raw)
+                result = {'kml': str(output)}
+            else:
+                result = {'candidates': {c['id']: candidate_links(c) for c in data['candidates']}, 'shortlist_url': shortlist_url(data)}
         elif args.command == "candidate":
             result = candidate(args.case, args.name, args.address, args.url)
         elif args.command == "evidence":
