@@ -40,6 +40,7 @@ flowchart LR
 | Confidence requirements | Requires documented address and visual evidence before accepting stronger conclusions. |
 | Paired detail comparison | Synchronized zoom and relative dragging, independently drawn corresponding regions, numbered labels and click-to-focus. |
 | Comparison reports | Builds self-contained HTML and CJK-capable PDFs with source links, paired images, and review history. |
+| Optional geo-sleuth bridge | Local preprocessing, optional OCR and a candidate/falsification board; exports unreviewed suggestions without changing case evidence. [Setup and limits](docs/geo-sleuth.md). |
 
 ## Map investigation (main / next release)
 
