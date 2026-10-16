@@ -323,6 +323,10 @@ export class GeoWorkbench {
       stamp = this.epoch;
     const value = await this.request(`/cases/${id}/geo`);
     if (stamp !== this.epoch || id !== this.caseId) return;
+    const listChanged =
+      this.value.runs.map((r) => r.id).join() !==
+        value.runs.map((r) => r.id).join() ||
+      this.value.configured !== value.configured;
     this.value = value;
     const run = this.selectedRun();
     const key =
@@ -332,8 +336,18 @@ export class GeoWorkbench {
         activeStates.has(run.status) +
         ":" +
         (run.result_token || "");
-    if (key !== this.renderKey) this.render();
-    else this.drawProgress();
+    if (listChanged || key !== this.renderKey) this.render();
+    else {
+      this.drawProgress();
+      this.container.querySelector('[data-geo-action="start"]').disabled =
+        !value.configured || value.runs.some((r) => activeStates.has(r.status));
+      for (const option of this.container.querySelector('[name="geo-run"]')
+        .options) {
+        const item = value.runs.find((r) => r.id === option.value);
+        if (item)
+          option.textContent = `${item.created_at} · ${this.t(item.status)}`;
+      }
+    }
     this.poll();
   }
   poll() {
