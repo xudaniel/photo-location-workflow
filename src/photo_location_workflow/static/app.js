@@ -1,3 +1,4 @@
+import { GeoWorkbench } from "/geosleuth.js";
 import { MapsWorkbench } from "/maps.js";
 import { ResearchWorkbench } from "/research.js";
 import { ComparisonWorkbench } from "/comparison.js";
@@ -428,6 +429,7 @@ async function render() {
   translate();
   await comparison.update(active, chosen);
   await research.update(active, language);
+  await geo.update(active, language);
   maps.update(active, chosen, language);
 }
 function draw() {
@@ -648,6 +650,7 @@ $("#demo").addEventListener("click", () =>
     notify(t("demoReady"));
   }),
 );
+const geo = new GeoWorkbench({container: $("#geo-workspace"), request, notify});
 const maps = new MapsWorkbench({container: $("#maps-workspace"), request, mutate, run, notify, fileBase64, download});
 const research = new ResearchWorkbench({
   container: $("#research-workspace"),

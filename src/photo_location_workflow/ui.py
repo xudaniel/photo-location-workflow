@@ -1,5 +1,6 @@
 """Loopback-only workbench, using the same case store and validation as the CLI."""
 
+from concurrent.futures import ThreadPoolExecutor
 import base64
 import binascii
 import hmac
@@ -19,6 +20,7 @@ from . import __version__
 from .annotations import add_annotation, remove_annotation
 from .core import add_evidence, asset_path, candidate, check_case, conclude, crop, init_case, load, review_evidence, save
 from .demo import create_demo
+from .geojobs import GeoJobs
 from .maps import candidate_links, export_kml, parse_google_url, save_location, save_view, shortlist_url
 from .report import render_html, render_pdf
 from .research import OpenAIResearch, ResearchManager, settings
@@ -26,12 +28,14 @@ from .research import OpenAIResearch, ResearchManager, settings
 MAX_BODY = 48 * 1024 * 1024
 
 
-def create_server(cases_root, port=0, research_client=None):
+def create_server(cases_root, port=0, research_client=None, geo_config=None):
     root = Path(cases_root).resolve()
     root.mkdir(parents=True, exist_ok=True)
     token = secrets.token_urlsafe(32)
     lock = threading.RLock()
-    research = ResearchManager(research_client, lock)
+    executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="photo-workbench")
+    research = ResearchManager(research_client, lock, executor)
+    geo = GeoJobs(root, lock, executor, geo_config)
     static = files('photo_location_workflow').joinpath('static')
 
     class Handler(BaseHTTPRequestHandler):
@@ -84,12 +88,12 @@ def create_server(cases_root, port=0, research_client=None):
             if not self._host_ok():
                 return self._send({'error': 'Unexpected host.'}, status=403)
             parsed = urlsplit(self.path)
-            if parsed.path in ('/', '/app.js', '/comparison.js', '/research.js', '/maps.js', '/style.css'):
-                name = {'/': 'index.html', '/app.js': 'app.js', '/comparison.js': 'comparison.js', '/research.js': 'research.js', '/maps.js': 'maps.js', '/style.css': 'style.css'}[parsed.path]
+            if parsed.path in ('/', '/app.js', '/comparison.js', '/research.js', '/geosleuth.js', '/maps.js', '/style.css'):
+                name = {'/': 'index.html', '/app.js': 'app.js', '/comparison.js': 'comparison.js', '/research.js': 'research.js', '/geosleuth.js': 'geosleuth.js', '/maps.js': 'maps.js', '/style.css': 'style.css'}[parsed.path]
                 value = static.joinpath(name).read_bytes()
                 if name == 'index.html':
                     value = value.replace(b'__LOCAL_TOKEN__', token.encode())
-                return self._send(value, {'index.html': 'text/html', 'app.js': 'text/javascript', 'comparison.js': 'text/javascript', 'research.js': 'text/javascript', 'maps.js': 'text/javascript', 'style.css': 'text/css'}[name])
+                return self._send(value, {'index.html': 'text/html', 'app.js': 'text/javascript', 'comparison.js': 'text/javascript', 'research.js': 'text/javascript', 'geosleuth.js': 'text/javascript', 'maps.js': 'text/javascript', 'style.css': 'text/css'}[name])
             if not self._authorized():
                 return self._send({'error': 'Local session authorization required.'}, status=403)
             try:
@@ -106,10 +110,16 @@ def create_server(cases_root, port=0, research_client=None):
                         return self._send({'cases': sorted(items, key=lambda c: c['updated_at'], reverse=True), 'version': __version__})
                     if parsed.path == '/api/research':
                         return self._send({'configured': research.client.configured, 'model': research.client.model})
-                    match = re.fullmatch(r'/api/cases/([^/]+)(?:/(asset|report|research|kml))?', parsed.path)
+                    match = re.fullmatch(r'/api/cases/([^/]+)(?:/(asset|report|research|kml|geo|geo-image))?', parsed.path)
                     if not match:
                         return self._send({'error': 'Not found.'}, status=404)
                     path = self._case(unquote(match[1]))
+                    if match[2] == 'geo':
+                        return self._send(geo.snapshot(path))
+                    if match[2] == 'geo-image':
+                        query = parse_qs(parsed.query)
+                        raw, mime = geo.image(path, query.get('run', [''])[0], query.get('path', [''])[0])
+                        return self._send(raw, mime)
                     if match[2] == 'kml':
                         return self._send(export_kml(load(path)), 'application/vnd.google-earth.kml+xml', filename='candidate-places.kml')
                     if match[2] == 'research':
@@ -174,10 +184,19 @@ def create_server(cases_root, port=0, research_client=None):
                         return self._send(self._state(path), status=201)
                     if route == '/api/maps/parse':
                         return self._send(parse_google_url(body['url']))
-                    match = re.fullmatch(r'/api/cases/([^/]+)/(crop|candidate|evidence|review|conclude|annotate|unannotate|research|progress|adopt|map-location|map-view)', route)
+                    match = re.fullmatch(r'/api/cases/([^/]+)/(crop|candidate|evidence|review|conclude|annotate|unannotate|research|progress|adopt|map-location|map-view|geo)', route)
                     if not match:
                         return self._send({'error': 'Not found.'}, status=404)
                     path = self._case(unquote(match[1]))
+                    if match[2] == 'geo':
+                        action = body.get('action', 'start')
+                        if action == 'cancel':
+                            return self._send(geo.cancel(path, body.get('run')))
+                        if action == 'mark':
+                            return self._send(geo.mark(path, body.get('run'), body.get('key'), body.get('verdict'), body.get('note')))
+                        if action != 'start':
+                            raise ValueError('Unknown local investigation action.')
+                        return self._send(geo.start(path, body), status=202)
                     if match[2] == 'research':
                         return self._send(research.start(path, body.get('assets'), body.get('language', 'en'), body.get('consent'), body.get('resume')), status=202)
                     elif match[2] == 'progress':
@@ -213,7 +232,9 @@ def create_server(cases_root, port=0, research_client=None):
     server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
     original_close = server.server_close
     def close():
+        geo.close()
         research.close()
+        executor.shutdown(wait=False, cancel_futures=True)
         original_close()
     server.server_close = close
     return server, token
