@@ -55,6 +55,10 @@ python -m pip install -e '.[pdf]'
 photo-locate ui
 ```
 
+## Use it on your phone
+
+Connect your phone and computer to the same trusted Wi-Fi, install the `mobile` extra and run `photo-locate ui --lan`. Scan the desktop workbench's QR code or enter its connection code. The phone can upload photos/HEIC originals, crop details, run investigations and view reports. The computer stays running; files stay on it. [Phone setup and access details](docs/mobile.md).
+
 ## Local workbench
 
 ![Local web workbench with a fictional building](docs/assets/workbench-preview.jpg)
@@ -111,7 +115,7 @@ photo-locate ui
 3. Add sources, capture years/months, providers and reference images. Review matches and contradictions with paired images.
 4. Preserve review reasons, save a conclusion, and download HTML or PDF.
 
-The workbench listens only on `127.0.0.1` and uses the same `case.json` and validation rules as the CLI. No Node, frontend build or model key is needed. Use `--cases` to choose a case directory, `--port` to change the port, or `--no-open` to skip opening a browser. Avoid editing the same case from another process while it runs. Press Ctrl-C to stop; reopen it later to continue.
+By default, the workbench listens only on `127.0.0.1` and uses the same `case.json` and validation rules as the CLI. No Node, frontend build or model key is needed. Use `--cases` to choose a case directory, `--port` to change the port, or `--no-open` to skip opening a browser. Avoid editing the same case from another process while it runs. Press Ctrl-C to stop; reopen it later to continue.
 
 ### Try it without uploading a photo
 

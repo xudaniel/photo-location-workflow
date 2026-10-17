@@ -26,13 +26,13 @@ jobs:
           version: '0.13.1'
           python-version: ${{ matrix.python }}
           enable-cache: true
-      - run: uv sync --locked --extra dev --extra pdf
+      - run: uv sync --locked --extra dev --extra pdf --extra mobile
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y fonts-wqy-microhei
       - name: Test core, HTTP API and reports
         env:
           PDF_REQUIRE_FONT: ${{ runner.os == 'Linux' && '1' || '0' }}
-        run: uv run --locked --extra dev --extra pdf pytest -q
+        run: uv run --locked --extra dev --extra pdf --extra mobile pytest -q
   package:
     runs-on: ubuntu-24.04
     steps:
@@ -52,4 +52,4 @@ jobs:
           .wheel-test/bin/photo-locate --version
           .wheel-test/bin/photo-locate demo --case cases/ci-demo
           .wheel-test/bin/photo-locate check cases/ci-demo
-          .wheel-test/bin/python -c "from importlib.resources import files; from photo_location_workflow.ui import create_server; assert all(files('photo_location_workflow').joinpath('static', name).is_file() for name in ('app.js', 'comparison.js', 'research.js', 'geosleuth.js', 'maps.js', 'style.css', 'index.html')); server, _ = create_server('cases'); server.server_close()"
+          .wheel-test/bin/python -c "from importlib.resources import files; from photo_location_workflow.ui import create_server; assert all(files('photo_location_workflow').joinpath('static', name).is_file() for name in ('app.js', 'comparison.js', 'research.js', 'geosleuth.js', 'maps.js', 'mobile.js', 'pair.js', 'pair.html', 'style.css', 'index.html')); server, _ = create_server('cases'); server.server_close()"

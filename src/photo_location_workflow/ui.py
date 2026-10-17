@@ -1,4 +1,4 @@
-"""Loopback-only workbench, using the same case store and validation as the CLI."""
+"""Local workbench with optional paired LAN access, using the same case store and validation as the CLI."""
 
 from concurrent.futures import ThreadPoolExecutor
 import base64
@@ -21,6 +21,7 @@ from .annotations import add_annotation, remove_annotation
 from .core import add_evidence, asset_path, candidate, check_case, conclude, crop, init_case, load, review_evidence, save
 from .demo import create_demo
 from .geojobs import GeoJobs
+from .mobile import Pairing, PairingThrottled, lan_address, session_cookie
 from .maps import candidate_links, export_kml, parse_google_url, save_location, save_view, shortlist_url
 from .report import render_html, render_pdf
 from .research import OpenAIResearch, ResearchManager, settings
@@ -28,9 +29,13 @@ from .research import OpenAIResearch, ResearchManager, settings
 MAX_BODY = 48 * 1024 * 1024
 
 
-def create_server(cases_root, port=0, research_client=None, geo_config=None):
+def create_server(cases_root, port=0, research_client=None, geo_config=None, lan=False, address=None):
     root = Path(cases_root).resolve()
     root.mkdir(parents=True, exist_ok=True)
+    if address and not lan:
+        raise ValueError("--lan-address requires --lan.")
+    bind_host = lan_address(address) if lan else "127.0.0.1"
+    pairing = Pairing() if lan else None
     token = secrets.token_urlsafe(32)
     lock = threading.RLock()
     executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="photo-workbench")
@@ -44,13 +49,16 @@ def create_server(cases_root, port=0, research_client=None, geo_config=None):
         def log_message(self, *args):
             pass  # Avoid storing request content or private image names in access logs.
 
-        def _send(self, value, mime='application/json', status=200, filename=None):
+        def _send(self, value, mime='application/json', status=200, filename=None, headers=None):
             if mime == 'application/json':
                 value = json.dumps(value, ensure_ascii=False).encode()
             self.send_response(status)
             self.send_header('Content-Type', mime + ('; charset=utf-8' if mime.startswith('text/') else ''))
             self.send_header('Content-Length', str(len(value)))
             self.send_header('Cache-Control', 'no-store')
+            self.send_header('Referrer-Policy', 'no-referrer')
+            for key, content in (headers or {}).items():
+                self.send_header(key, content)
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.send_header('Content-Security-Policy', "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'")
             if filename:
@@ -59,13 +67,20 @@ def create_server(cases_root, port=0, research_client=None, geo_config=None):
             self.wfile.write(value)
 
         def _host_ok(self):
-            return self.headers.get('Host') == f'127.0.0.1:{self.server.server_port}'
+            return self.headers.get('Host') == f'{bind_host}:{self.server.server_port}'
 
         def _authorized(self):
-            expected_origin = f'http://127.0.0.1:{self.server.server_port}'
+            expected_origin = f'http://{bind_host}:{self.server.server_port}'
             origin = self.headers.get('Origin')
-            return self._host_ok() and (origin is None or origin == expected_origin) and hmac.compare_digest(
-                self.headers.get('X-Local-Token', ''), token)
+            return (self._host_ok() and (origin is None or origin == expected_origin)
+                    and (not pairing or self._role()) and hmac.compare_digest(
+                        self.headers.get('X-Local-Token', ''), token))
+
+        def _role(self):
+            return pairing.role(self.headers.get('Cookie'), self.server.server_port) if pairing else 'admin'
+
+        def _origin_ok(self):
+            return self._host_ok() and self.headers.get('Origin') in (None, f'http://{bind_host}:{self.server.server_port}')
 
         def _case(self, name):
             if not re.fullmatch(r'[\w-]{1,80}', name):
@@ -88,12 +103,25 @@ def create_server(cases_root, port=0, research_client=None, geo_config=None):
             if not self._host_ok():
                 return self._send({'error': 'Unexpected host.'}, status=403)
             parsed = urlsplit(self.path)
-            if parsed.path in ('/', '/app.js', '/comparison.js', '/research.js', '/geosleuth.js', '/maps.js', '/style.css'):
-                name = {'/': 'index.html', '/app.js': 'app.js', '/comparison.js': 'comparison.js', '/research.js': 'research.js', '/geosleuth.js': 'geosleuth.js', '/maps.js': 'maps.js', '/style.css': 'style.css'}[parsed.path]
+            if parsed.path in ('/', '/app.js', '/comparison.js', '/research.js', '/geosleuth.js', '/maps.js', '/mobile.js', '/pair.js', '/style.css'):
+                name = {'/': 'index.html', '/app.js': 'app.js', '/comparison.js': 'comparison.js', '/research.js': 'research.js', '/geosleuth.js': 'geosleuth.js', '/mobile.js': 'mobile.js', '/pair.js': 'pair.js', '/maps.js': 'maps.js', '/style.css': 'style.css'}[parsed.path]
+                if name == 'index.html' and pairing and not self._role():
+                    name = 'pair.html'
                 value = static.joinpath(name).read_bytes()
                 if name == 'index.html':
                     value = value.replace(b'__LOCAL_TOKEN__', token.encode())
-                return self._send(value, {'index.html': 'text/html', 'app.js': 'text/javascript', 'comparison.js': 'text/javascript', 'research.js': 'text/javascript', 'geosleuth.js': 'text/javascript', 'maps.js': 'text/javascript', 'style.css': 'text/css'}[name])
+                return self._send(value, {'index.html': 'text/html', 'pair.html': 'text/html', 'mobile.js': 'text/javascript', 'pair.js': 'text/javascript', 'app.js': 'text/javascript', 'comparison.js': 'text/javascript', 'research.js': 'text/javascript', 'geosleuth.js': 'text/javascript', 'maps.js': 'text/javascript', 'style.css': 'text/css'}[name])
+            if parsed.path.startswith('/view/'):
+                # A read-only document navigation has no custom header. Require
+                # the paired device cookie; never put session secrets in links.
+                if not pairing or not self._role() or not self._origin_ok():
+                    return self._send({'error': 'Paired device required.'}, status=403)
+                try:
+                    with lock:
+                        path = self._case(unquote(parsed.path[len('/view/'):]))
+                        return self._send(render_html(path).read_bytes(), 'text/html')
+                except (ValueError, OSError, KeyError, TypeError) as exc:
+                    return self._send({'error': str(exc)}, status=400)
             if not self._authorized():
                 return self._send({'error': 'Local session authorization required.'}, status=403)
             try:
@@ -108,6 +136,12 @@ def create_server(cases_root, port=0, research_client=None, geo_config=None):
                                 except (ValueError, OSError, KeyError):
                                     continue
                         return self._send({'cases': sorted(items, key=lambda c: c['updated_at'], reverse=True), 'version': __version__})
+                    if parsed.path == '/api/mobile':
+                        return self._send(pairing.state(f'http://{bind_host}:{self.server.server_port}', self._role() == 'admin') if pairing else {'enabled': False})
+                    if parsed.path == '/api/mobile/qr':
+                        if not pairing or self._role() != 'admin':
+                            return self._send({'error': 'Desktop session required.'}, status=403)
+                        return self._send(pairing.qr(f'http://{bind_host}:{self.server.server_port}'), 'image/png')
                     if parsed.path == '/api/research':
                         return self._send({'configured': research.client.configured, 'model': research.client.model})
                     match = re.fullmatch(r'/api/cases/([^/]+)(?:/(asset|report|research|kml|geo|geo-image))?', parsed.path)
@@ -158,7 +192,9 @@ def create_server(cases_root, port=0, research_client=None, geo_config=None):
             return path
 
         def do_POST(self):
-            if not self._authorized():
+            route = urlsplit(self.path).path
+            is_pair = route == '/api/pair' and pairing is not None
+            if not (self._origin_ok() if is_pair else self._authorized()):
                 return self._send({'error': 'Local session authorization required.'}, status=403)
             try:
                 length = int(self.headers.get('Content-Length', '0'))
@@ -169,7 +205,17 @@ def create_server(cases_root, port=0, research_client=None, geo_config=None):
                 body = json.loads(self.rfile.read(length))
                 if not isinstance(body, dict):
                     raise ValueError('Expected an object.')
-                route = urlsplit(self.path).path
+                if is_pair:
+                    session = pairing.exchange(body, self.client_address[0])
+                    return self._send({'connected': True}, headers={'Set-Cookie': session_cookie(session, self.server.server_port)})
+                if route == '/api/mobile/disconnect' and pairing:
+                    pairing.disconnect(self.headers.get('Cookie'), self.server.server_port)
+                    return self._send({'connected': False}, headers={'Set-Cookie': session_cookie('', self.server.server_port, clear=True)})
+                if route == '/api/mobile/revoke' and pairing:
+                    if self._role() != 'admin':
+                        return self._send({'error': 'Desktop session required.'}, status=403)
+                    pairing.revoke_phones()
+                    return self._send(pairing.state(f'http://{bind_host}:{self.server.server_port}', True))
                 with lock, tempfile.TemporaryDirectory() as temporary:
                     if route in ('/api/cases', '/api/demo'):
                         path = root / ('demo-' if route.endswith('demo') else 'photo-')
@@ -226,10 +272,13 @@ def create_server(cases_root, port=0, research_client=None, geo_config=None):
                     else:
                         conclude(path, body['candidate'], body['level'], body['note'])
                     return self._send(self._state(path))
+            except PairingThrottled as exc:
+                return self._send({'error': str(exc)}, status=429, headers={'Retry-After': '300'})
             except (ValueError, OSError, KeyError, TypeError) as exc:
                 return self._send({'error': str(exc)}, status=400)
 
-    server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
+    server = ThreadingHTTPServer((bind_host, port), Handler)
+    server.mobile_pairing = pairing
     original_close = server.server_close
     def close():
         geo.close()
@@ -240,12 +289,15 @@ def create_server(cases_root, port=0, research_client=None, geo_config=None):
     return server, token
 
 
-def serve(cases_root, port=8765, open_browser=True, env_file=None):
-    server, _ = create_server(cases_root, port, OpenAIResearch(*settings(env_file)))
-    url = f'http://127.0.0.1:{server.server_port}'
+def serve(cases_root, port=8765, open_browser=True, env_file=None, lan=False, address=None):
+    server, _ = create_server(cases_root, port, OpenAIResearch(*settings(env_file)), lan=lan, address=address)
+    url = f'http://{server.server_address[0]}:{server.server_port}'
+    desktop_url = url + '/#admin=' + server.mobile_pairing.admin_secret if lan else url
     print(f'Photo Location Workbench {__version__}: {url}\nLocal files: {Path(cases_root).resolve()}\nPress Ctrl-C to stop.')
+    if lan:
+        print(f"Phone / 手机: {url}  Code / 连接码: {server.mobile_pairing.code}\nDesktop / 电脑: {desktop_url}\nSame trusted Wi-Fi; keep this computer running. / 同一可信 Wi-Fi，电脑需保持运行。")
     if open_browser:
-        webbrowser.open(url)
+        webbrowser.open(desktop_url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

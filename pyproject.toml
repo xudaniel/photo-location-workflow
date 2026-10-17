@@ -17,6 +17,7 @@ dependencies = ["Pillow>=10.4,<13"]
 [project.optional-dependencies]
 browser = ["playwright>=1.45,<2"]
 pdf = ["reportlab>=4.2,<6"]
+mobile = ["qrcode>=8,<9", "pillow-heif>=1,<2"]
 dev = ["pytest>=8,<10"]
 release = ["build>=1.2,<2", "twine>=6,<7"]
 

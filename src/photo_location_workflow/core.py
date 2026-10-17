@@ -57,8 +57,21 @@ def asset_path(case, relative):
     return path
 
 
+def prepare_phone_format(source):
+    """Register optional HEIF support for an iPhone original, including extensionless uploads."""
+    with Path(source).open('rb') as stream:
+        header = stream.read(64)
+    if header[4:8] == b'ftyp' and any(brand in header for brand in (b'heic', b'heix', b'hevc', b'hevx', b'mif1', b'msf1')):
+        try:
+            from pillow_heif import register_heif_opener
+        except ImportError as exc:
+            raise ValueError('HEIC/HEIF needs the mobile extra: pip install "photo-location-workflow[mobile]"; or export JPEG. / 请安装 mobile 扩展或先导出 JPEG。') from exc
+        register_heif_opener(thumbnails=False)
+
+
 def copy_image(source, target):
     """Normalize orientation and remove EXIF/GPS by copying decoded pixels."""
+    prepare_phone_format(source)
     with Image.open(source) as original:
         oriented = ImageOps.exif_transpose(original).convert("RGB")
         clean = Image.new("RGB", oriented.size)
@@ -75,6 +88,7 @@ def init_case(photo, case):
     if root.exists() and any(root.iterdir()):
         raise ValueError("Choose an empty case directory; existing files are never overwritten.")
     photo = Path(photo).resolve()
+    prepare_phone_format(photo)
     with Image.open(photo) as im:
         im.verify()
     root.mkdir(parents=True, exist_ok=True)
