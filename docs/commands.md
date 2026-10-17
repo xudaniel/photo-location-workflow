@@ -12,6 +12,8 @@ When stdout is redirected, JSON uses standard Unicode escapes so legacy Windows 
 
 ## `ui` / 本地网页工作台
 
+Use `ui --lan` for paired phone access on the same trusted Wi-Fi; optional `--lan-address` selects a private IPv4 interface. Default remains loopback-only. See [phone setup](mobile.md). / 同 Wi-Fi 手机访问可用 `ui --lan`；`--lan-address` 选择私有 IPv4 网卡地址。默认仍只允许本机，见[手机说明](mobile.md#简体中文)。
+
 ```bash
 photo-locate ui --cases cases --port 8765
 photo-locate ui --cases cases --port 8765 --no-open

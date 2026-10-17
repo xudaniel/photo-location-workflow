@@ -1,3 +1,4 @@
+import { MobileConnection } from "/mobile.js";
 import { GeoWorkbench } from "/geosleuth.js";
 import { MapsWorkbench } from "/maps.js";
 import { ResearchWorkbench } from "/research.js";
@@ -5,6 +6,11 @@ import { ComparisonWorkbench } from "/comparison.js";
 ("use strict");
 const translations = {
   en: {
+    chooseCase: "Investigations",
+    cameraPhoto: "Take photo",
+    localInvestigation: "Investigate",
+    cropEnable: "Enable touch selection",
+    cropDone: "Finish selection · scroll",
     investigations: "YOUR INVESTIGATIONS",
     newPhoto: "+ New photo",
     localOnly: "On your computer",
@@ -91,12 +97,18 @@ const translations = {
     sourceImage: "Your photo",
     referencePhoto: "Reference",
     fileTooLarge: "Choose an image smaller than 32 MB.",
-    exported: "Report downloaded.",
+    exported: "Report sent to your browser. Check its download or share menu.",
+    viewReport: "View report",
     newCase: "Photo prepared. Select a distinctive detail to continue.",
     demoReady:
       "Offline demo ready. This is a fictional building, not a verified location.",
   },
   zh: {
+    chooseCase: "选择调查",
+    cameraPhoto: "拍照",
+    localInvestigation: "线索调查",
+    cropEnable: "开启触摸框选",
+    cropDone: "完成框选，继续滚动",
     investigations: "我的地点调查",
     newPhoto: "+ 新建照片调查",
     localOnly: "在你的电脑上运行",
@@ -180,11 +192,13 @@ const translations = {
     sourceImage: "原照片",
     referencePhoto: "参考影像",
     fileTooLarge: "请选择小于 32 MB 的图片。",
-    exported: "报告已下载。",
+    exported: "已向浏览器发送报告，请查看下载或分享菜单。",
+    viewReport: "打开报告",
     newCase: "照片已准备好。框选最有辨识度的细节继续。",
     demoReady: "离线演示已就绪。这是虚构建筑，不是已确认地点。",
   },
 };
+let cropTouchEnabled = false;
 let language = localStorage.getItem("photo-location-language");
 if (!["en", "zh"].includes(language))
   language = navigator.language.startsWith("zh") ? "zh" : "en";
@@ -222,6 +236,7 @@ function translate() {
     .querySelectorAll("[data-i18n]")
     .forEach((e) => (e.textContent = t(e.dataset.i18n)));
   $("#language").textContent = language === "zh" ? "EN" : "中文";
+  updateCropMode();
 }
 function notify(message, error = false) {
   const n = $("#notice");
@@ -340,6 +355,8 @@ async function render() {
     data = active.data;
   $("#landing").hidden = true;
   $("#workspace").hidden = false;
+  $("#view-report").hidden = !phone.value?.enabled;
+  $("#view-report").href = `/view/${encodeURIComponent(active.id)}`;
   $("#case-title").textContent = data.title || active.id;
   $("#image-size").textContent = data.source.size.join(" × ") + " px";
   $("#confidence").textContent = t(data.conclusion.level);
@@ -476,6 +493,12 @@ function updateSelection() {
   draw();
 }
 $("#crop-canvas").addEventListener("pointerdown", (event) => {
+  if (
+    !event.isPrimary ||
+    event.button !== 0 ||
+    (event.pointerType === "touch" && !cropTouchEnabled)
+  )
+    return;
   dragStart = point(event);
   event.currentTarget.setPointerCapture(event.pointerId);
 });
@@ -490,8 +513,12 @@ $("#crop-canvas").addEventListener("pointermove", (event) => {
   ];
   updateSelection();
 });
-$("#crop-canvas").addEventListener("pointerup", () => {
+$("#crop-canvas").addEventListener("pointerup", (event) => {
   dragStart = null;
+  if (event.pointerType === "touch") {
+    cropTouchEnabled = false;
+    updateCropMode();
+  }
 });
 $("#crop-canvas").addEventListener("pointercancel", () => {
   dragStart = null;
@@ -581,8 +608,10 @@ function download(blob, name) {
     a = document.createElement("a");
   a.href = url;
   a.download = name;
+  document.body.append(a);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 $("#download-image").addEventListener("click", () =>
   run(async () =>
@@ -614,11 +643,33 @@ $("#language").addEventListener("click", () =>
   run(async () => {
     language = language === "zh" ? "en" : "zh";
     localStorage.setItem("photo-location-language", language);
+    await phone.update(language);
     $("#notice").hidden = true;
     translate();
     if (active) await render();
     await listCases();
   }),
+);
+function updateCropMode() {
+  const button = $("#crop-mode"),
+    canvas = $("#crop-canvas");
+  button.textContent = t(cropTouchEnabled ? "cropDone" : "cropEnable");
+  button.setAttribute("aria-pressed", String(cropTouchEnabled));
+  canvas.dataset.selecting = String(cropTouchEnabled);
+}
+$("#crop-mode").addEventListener("click", () => {
+  cropTouchEnabled = !cropTouchEnabled;
+  updateCropMode();
+});
+$("#case-toggle").addEventListener("click", () => {
+  const button = $("#case-toggle"),
+    open = button.getAttribute("aria-expanded") !== "true";
+  button.setAttribute("aria-expanded", String(open));
+  $("#case-list").dataset.open = String(open);
+});
+$("#camera-photo").addEventListener("click", () => $("#camera-input").click());
+$("#camera-input").addEventListener("change", (event) =>
+  run(() => importPhoto(event.target.files[0])),
 );
 $("#new-photo").addEventListener("click", () => $("#photo-input").click());
 $("#drop-zone").addEventListener("click", () => $("#photo-input").click());
@@ -650,8 +701,25 @@ $("#demo").addEventListener("click", () =>
     notify(t("demoReady"));
   }),
 );
-const geo = new GeoWorkbench({container: $("#geo-workspace"), request, notify});
-const maps = new MapsWorkbench({container: $("#maps-workspace"), request, mutate, run, notify, fileBase64, download});
+const phone = new MobileConnection({
+  container: $("#phone-connection"),
+  request,
+  notify,
+});
+const geo = new GeoWorkbench({
+  container: $("#geo-workspace"),
+  request,
+  notify,
+});
+const maps = new MapsWorkbench({
+  container: $("#maps-workspace"),
+  request,
+  mutate,
+  run,
+  notify,
+  fileBase64,
+  download,
+});
 const research = new ResearchWorkbench({
   container: $("#research-workspace"),
   request,
@@ -685,6 +753,7 @@ $("#evidence-list").addEventListener("click", (event) => {
 });
 translate();
 run(async () => {
+  await phone.update(language);
   const cases = await listCases();
   if (cases.length) await openCase(cases[0].id);
 });

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="referrer" content="no-referrer" />
+    <title>连接照片工作台 · Connect</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/pair.js" type="module"></script>
+  </head>
+  <body class="pair-page">
+    <main>
+      <section class="card pair-card">
+        <span class="eyebrow">PHOTO LOCATION · YOUR COMPUTER</span>
+        <h1>连接照片工作台</h1>
+        <p>Connect to your workbench</p>
+        <p>
+          手机与电脑连接同一可信 Wi‑Fi，输入电脑显示的 8
+          位连接码，或扫描电脑上的二维码。
+        </p>
+        <p class="hint">
+          On the same trusted Wi‑Fi, enter the 8-digit code shown on your
+          computer or scan its QR code.
+        </p>
+        <form id="pair-form">
+          <label for="pair-code">连接码 / Connection code</label
+          ><input
+            id="pair-code"
+            name="code"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]{8}"
+            maxlength="8"
+            autocomplete="one-time-code"
+            required
+            autofocus
+          /><button type="submit">连接 / Connect</button>
+        </form>
+        <p id="pair-message" role="status" aria-live="polite"></p>
+        <p class="hint">
+          电脑需保持运行。连接后可访问该工作台中的调查与照片；连接会在 12
+          小时后或服务重启时失效。<br />Keep the computer running. Pairing
+          grants access to this workbench's investigations and photos. Sessions
+          expire after 12 hours or a server restart.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

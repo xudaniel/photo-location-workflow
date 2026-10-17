@@ -7,6 +7,7 @@ const words = {
     kicker: "PAIRED IMAGE WORKSPACE",
     evidence: "Evidence image",
     pan: "Move images",
+    scroll: "Scroll page",
     mark: "Draw regions",
     sync: "Sync dragging",
     fit: "Fit both",
@@ -36,6 +37,7 @@ const words = {
     kicker: "双图细节对照",
     evidence: "选择证据影像",
     pan: "移动图片",
+    scroll: "滚动页面",
     mark: "框选细节",
     sync: "同步拖动",
     fit: "适应双图",
@@ -78,10 +80,10 @@ export class ComparisonWorkbench {
     ];
     this.zoom = 1;
     this.drafts = [null, null];
-    this.mode = "pan";
+    this.mode = matchMedia("(pointer: coarse)").matches ? "scroll" : "pan";
     this.serial = 0;
     container.innerHTML = `<div class="card-heading"><div><span class="eyebrow" data-ci18n="kicker"></span><h2 data-ci18n="title"></h2></div><label class="comparison-evidence-label"><span data-ci18n="evidence"></span><select class="comparison-evidence"></select></label></div>
-    <p class="hint" data-ci18n="hint"></p><div class="comparison-toolbar"><div class="mode-buttons"><button type="button" data-mode="pan" data-ci18n="pan"></button><button type="button" class="secondary" data-mode="mark" data-ci18n="mark"></button></div><label class="sync-control"><input class="sync-views" type="checkbox" checked><span data-ci18n="sync"></span></label><div class="zoom-controls"><button type="button" class="secondary" data-zoom="-1" aria-label="Zoom out">−</button><label><span data-ci18n="zoom"></span><input class="comparison-zoom" type="range" min="1" max="12" step="0.25" value="1"></label><output class="zoom-value">1×</output><button type="button" class="secondary" data-zoom="1" aria-label="Zoom in">+</button></div><button type="button" class="secondary fit-views" data-ci18n="fit"></button></div>
+    <p class="hint" data-ci18n="hint"></p><div class="comparison-toolbar"><div class="mode-buttons"><button type="button" class="secondary" data-mode="scroll" data-ci18n="scroll"></button><button type="button" data-mode="pan" data-ci18n="pan"></button><button type="button" class="secondary" data-mode="mark" data-ci18n="mark"></button></div><label class="sync-control"><input class="sync-views" type="checkbox" checked><span data-ci18n="sync"></span></label><div class="zoom-controls"><button type="button" class="secondary" data-zoom="-1" aria-label="Zoom out">−</button><label><span data-ci18n="zoom"></span><input class="comparison-zoom" type="range" min="1" max="12" step="0.25" value="1"></label><output class="zoom-value">1×</output><button type="button" class="secondary" data-zoom="1" aria-label="Zoom in">+</button></div><button type="button" class="secondary fit-views" data-ci18n="fit"></button></div>
     <div class="comparison-viewports">${[0, 1].map((side) => `<figure><figcaption data-ci18n="${side ? "reference" : "source"}"></figcaption><canvas class="comparison-canvas" data-side="${side}" aria-label="${side ? "Reference comparison canvas" : "Source comparison canvas"}" tabindex="0"></canvas></figure>`).join("")}</div>
     <form class="annotation-form"><div class="annotation-fields">${[0, 1].map((side) => `<fieldset data-side="${side}"><legend data-ci18n="${side ? "referenceBox" : "sourceBox"}"></legend>${["x", "y", "w", "h"].map((key, i) => `<label>${["X", "Y", "W", "H"][i]}<input name="${side}-${key}" type="number" min="${i < 2 ? 0 : 1}" required aria-label="${side ? "Reference" : "Source"} region ${key}"></label>`).join("")}</fieldset>`).join("")}</div><p class="hint" data-ci18n="pixels"></p><div class="annotation-save"><label><span data-ci18n="label"></span><input name="label" required maxlength="160"></label><button type="submit" data-ci18n="save"></button><button type="button" class="secondary clear-regions" data-ci18n="clear"></button></div></form><div class="annotation-list"></div><p class="hint annotation-history-note" data-ci18n="removed" hidden></p>`;
     this.canvases = [...container.querySelectorAll("canvas")];
@@ -166,7 +168,13 @@ export class ComparisonWorkbench {
       });
     this.canvases.forEach((canvas, side) => {
       canvas.addEventListener("pointerdown", (event) => {
-        if (this.images.length !== 2) return;
+        if (
+          this.images.length !== 2 ||
+          this.mode === "scroll" ||
+          !event.isPrimary ||
+          event.button !== 0
+        )
+          return;
         canvas.setPointerCapture(event.pointerId);
         this.drag = {
           side,
@@ -255,9 +263,15 @@ export class ComparisonWorkbench {
       b.setAttribute("aria-pressed", String(selected));
       b.classList.toggle("secondary", !selected);
     });
-    this.canvases.forEach(
-      (c) => (c.style.cursor = this.mode === "mark" ? "crosshair" : "grab"),
-    );
+    this.canvases.forEach((c) => {
+      c.style.cursor =
+        this.mode === "mark"
+          ? "crosshair"
+          : this.mode === "scroll"
+            ? "auto"
+            : "grab";
+      c.style.touchAction = this.mode === "scroll" ? "pan-y" : "none";
+    });
   }
   clearDrafts() {
     this.drafts = [null, null];

@@ -2,7 +2,10 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta name="local-token" content="__LOCAL_TOKEN__" />
     <title>Photo Location Workbench</title>
     <link rel="stylesheet" href="/style.css" />
@@ -16,6 +19,13 @@
       >
       <div class="sidebar-label" data-i18n="investigations"></div>
       <button id="new-photo" class="new-button" data-i18n="newPhoto"></button>
+      <button
+        id="case-toggle"
+        class="secondary mobile-only"
+        aria-controls="case-list"
+        aria-expanded="false"
+        data-i18n="chooseCase"
+      ></button>
       <div id="case-list"></div>
       <div class="sidebar-bottom">
         <span class="status-dot"></span><span data-i18n="localOnly"></span
@@ -31,12 +41,18 @@
             <p data-i18n="subtitle"></p>
           </div>
           <div class="header-actions">
-            <button id="language" class="quiet">EN</button
+            <button
+              id="camera-photo"
+              class="secondary mobile-only"
+              data-i18n="cameraPhoto"
+            ></button
+            ><button id="language" class="quiet">EN</button
             ><button id="demo" class="secondary" data-i18n="tryDemo"></button>
           </div>
         </div>
       </header>
       <div id="notice" role="status" aria-live="polite" hidden></div>
+      <section id="phone-connection" class="card" hidden></section>
       <section id="landing">
         <div class="landing-text">
           <span class="pill" data-i18n="noKey"></span>
@@ -58,9 +74,10 @@
       </section>
       <section id="workspace" hidden>
         <nav class="steps">
-          <span data-i18n="stepPhoto"></span><span data-i18n="stepDetail"></span
-          ><span data-i18n="stepEvidence"></span
-          ><span data-i18n="stepReport"></span>
+          <a href="#photo-workspace" data-i18n="stepPhoto"></a
+          ><a href="#geo-workspace" data-i18n="localInvestigation"></a
+          ><a href="#evidence-workspace" data-i18n="stepEvidence"></a
+          ><a href="#report-workspace" data-i18n="stepReport"></a>
         </nav>
         <section id="geo-workspace" class="card"></section>
         <section id="research-workspace" class="card"></section>
@@ -68,7 +85,7 @@
         <section id="comparison-workspace" class="card" hidden></section>
         <div class="work-grid">
           <div class="left-column">
-            <section class="card photo-card">
+            <section id="photo-workspace" class="card photo-card">
               <div class="card-heading">
                 <div>
                   <span class="eyebrow" data-i18n="scene"></span>
@@ -77,6 +94,12 @@
                 <span id="image-size" class="muted"></span>
               </div>
               <p class="hint" data-i18n="selectHint"></p>
+              <button
+                id="crop-mode"
+                type="button"
+                class="secondary mobile-only"
+                aria-pressed="false"
+              ></button>
               <div class="canvas-scroll">
                 <canvas
                   id="crop-canvas"
@@ -162,7 +185,7 @@
             </section>
           </div>
           <div class="right-column">
-            <section class="card">
+            <section id="candidates-workspace" class="card">
               <div class="card-heading">
                 <h2 data-i18n="candidates"></h2>
                 <span id="confidence" class="pill"></span>
@@ -188,7 +211,7 @@
                 </form>
               </details>
             </section>
-            <section class="card">
+            <section id="evidence-workspace" class="card">
               <div class="card-heading">
                 <h2 data-i18n="evidence"></h2>
                 <span id="evidence-count" class="muted"></span>
@@ -257,7 +280,7 @@
                 </form>
               </details>
             </section>
-            <section class="card">
+            <section id="report-workspace" class="card">
               <h2 data-i18n="conclusion"></h2>
               <form id="conclusion-form">
                 <label
@@ -283,6 +306,12 @@
               </form>
               <div id="integrity" class="integrity"></div>
               <div class="export-row">
+                <a
+                  id="view-report"
+                  class="button"
+                  hidden
+                  data-i18n="viewReport"
+                ></a>
                 <button id="export-html" data-i18n="exportHtml"></button
                 ><button
                   id="export-pdf"
@@ -300,6 +329,13 @@
         ><span>MIT · Photo Location Workflow</span>
       </footer>
     </main>
-    <input id="photo-input" type="file" accept="image/*" hidden />
+    <input id="photo-input" type="file" accept="image/*,.heic,.heif" hidden />
+    <input
+      id="camera-input"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      hidden
+    />
   </body>
 </html>

@@ -2,6 +2,9 @@
 
 ## Unreleased / 待发行
 
+- Optional paired phone access on a private LAN interface (`ui --lan`), desktop QR/code sharing, expiring device cookies, pairing attempt limits and phone revocation. / 可选局域网手机配对，支持二维码、连接码、会话过期、尝试限制及断开手机。
+- Phone layout, camera/library inputs, explicit touch selection, page-scroll comparison mode and optional HEIC decoding through the `mobile` extra. / 手机布局、拍照及相册入口、显式触摸框选、双图滚动模式及可选 HEIC 解码。
+
 - Resumable local investigation workbench: actual stage progress, cancel/resume, generated previews, candidate falsification and per-item review history in English/Chinese. / 新增中英文后台调查、真实阶段、取消恢复、预览、反证计划与逐条审阅历史。
 - Streamed bounded subprocess logs, process-tree termination, cross-process workspace locks, preserved preparation/preprocessing checkpoints and a shared web executor. / 持续写入限长日志、清理子进程树、跨进程工作区锁、保存分步进度，并共用网页线程池。
 - Local-job API authorization, restart recovery, input-bound review contexts and regression tests using actual child processes. / 新增本地任务权限、重启恢复、审阅结果绑定及真实子进程回归测试。

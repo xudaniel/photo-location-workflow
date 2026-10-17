@@ -55,6 +55,10 @@ python -m pip install -e '.[pdf]'
 photo-locate ui
 ```
 
+## Use it on your phone
+
+Connect your phone and computer to the same trusted Wi-Fi, install the `mobile` extra and run `photo-locate ui --lan`. Scan the desktop workbench's QR code or enter its connection code. The phone can upload photos/HEIC originals, crop details, run investigations and view reports. The computer stays running; files stay on it. [Phone setup and access details](docs/mobile.md).
+
 ## Local workbench
 
 ![Local web workbench with a fictional building](docs/assets/workbench-preview.jpg)
